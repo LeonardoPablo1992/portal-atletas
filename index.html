@@ -468,6 +468,7 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .readi{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 12px}
 .pink{background:#fff1f2!important;color:#e11d48!important}
 
+.ph-tabs button{font-size:11px;padding:10px 2px;min-width:0}
 .tl-dot{display:inline-block;border-radius:99px;flex-shrink:0;box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.07);cursor:help}
 .tl-light{display:flex;flex-direction:column;gap:6px;background:#1f2937;border-radius:16px;padding:8px;flex-shrink:0}
 .tl-light i{width:24px;height:24px;border-radius:99px;opacity:.18;display:block}
@@ -586,6 +587,18 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .gseg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:#fff}
 .gseg button{border:0;background:transparent;border-radius:999px;padding:6px 16px;font-weight:700;font-size:13px;color:var(--ink-2)}
 .gseg button.on{background:var(--green);color:#fff}
+
+.pf-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.pf-head .avatar{width:54px;height:54px;font-size:18px}
+.pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pf-grid .c{background:var(--bg);border-radius:12px;padding:10px 12px;min-width:0}
+.pf-grid .c .l{font-size:11px;color:var(--muted);display:flex;align-items:center}
+.pf-grid .c .v{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.pf-grid .c .v.na{color:#9ca3af;font-weight:500;font-size:13px}
+.ztable{width:100%;border-collapse:collapse;font-size:13px}
+.ztable td{padding:7px 4px;border-bottom:1px solid var(--line-2)}
+.ztable .zd{width:12px;height:12px;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:6px}
+.ph-top .r1 .avatar{cursor:pointer}
 </style>
 </head>
 <body>
@@ -1311,6 +1324,36 @@ function cycToggle(aid,role){S.ui.cycA=aid;const c=cycleOf(aid);cycWrite(aid,{tr
 function cycSave(aid,role,today){S.ui.cycA=aid;const pre=role==='coach'?'nc':'ac';const last=today?TODAY:gv(pre+'_last'),len=+gv(pre+'_len')||28,plen=+gv(pre+'_plen')||5;
   if(!last){toast('Pon la fecha de inicio de la última menstruación');return}if(len<20||len>45){toast('La duración del ciclo suele estar entre 20 y 45 días');return}
   cycWrite(aid,{tracking:true,last,len,plen});if(role==='athlete'&&today)pushActivity(aid,'ready','registró inicio de menstruación');cycRerender(role);toast('Dato guardado')}
+const ZDESC=['Muy suave · calentar y recuperar','Suave · resistencia base, puedes platicar','Moderada · ritmo sostenido, frases cortas','Intensa · cuesta hablar','Máxima · esfuerzos muy cortos'];
+function profilePageHTML(a){
+  const c=bodyComp(a),k=karvonen(a),g=genderOf(a),v=(x,u='')=>x!=null&&x!==''?`<div class="v">${esc(x)}${u?` <small style="font-size:11px;color:var(--muted);font-weight:500">${u}</small>`:''}</div>`:'<div class="v na">Sin registrar</div>';
+  const act=(ACT.find(([f])=>f===(+a.activity||0))||[])[1];
+  const plan=a.plan&&a.plan.name?a.plan.name.replace(/^Plan actual · /,'Plan de '):null,kc=c.kcalT||(a.nutrition&&a.nutrition.meals?a.nutrition.meals.reduce((s,m)=>s+(m.kcal||0),0):null);
+  return `<div class="card" style="padding:14px;margin-bottom:12px">
+    <div class="pf-head"><div class="avatar" style="background:${a.color}">${initials(a.name)}</div><div style="min-width:0"><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.email||'')}</div>${a.goal?`<span class="pill done" style="margin-top:4px">${ic('target',11)} ${esc(a.goal)}</span>`:''}</div></div>
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b>Mis datos</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>
+    ${cycleHTML(a,'athlete')}
+    <div class="pf-grid">
+      <div class="c"><div class="l">Edad</div>${v(a.age,a.age?'años':'')}</div>
+      <div class="c"><div class="l">Estatura</div>${v(a.height,a.height?'cm':'')}</div>
+      <div class="c"><div class="l">Peso actual</div>${v(c.w,c.w?'kg':'')}</div>
+      <div class="c"><div class="l">Peso meta</div>${v(a.goalWeight,a.goalWeight?'kg':'')}</div>
+      <div class="c"><div class="l">Ocupación</div>${v(a.occupation)}</div>
+      <div class="c"><div class="l">Deporte</div>${v(a.sport)}</div>
+      <div class="c" style="grid-column:1/-1"><div class="l">Nivel de actividad</div>${v(act)}</div>
+    </div></div>
+  ${compHTML(a,'athlete')}
+  <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:4px;margin-bottom:8px"><b>Mis zonas de entrenamiento</b>${qm('zonas')}</div>
+    <div class="pf-grid" style="margin-bottom:10px"><div class="c"><div class="l">Pulso en reposo ${qm('fcrep')}</div>${v(k?k.rest:a.hrRest,(k||a.hrRest)?'lpm':'')}</div><div class="c"><div class="l">Pulso máximo</div>${v(k?k.max:null,k?'lpm':'')}</div></div>
+    ${k?`<table class="ztable">${k.z.map((z,i)=>`<tr><td><span class="zd" style="background:${['#60a5fa','#22c55e','#eab308','#f97316','#ef4444'][i]}"></span><b>Z${i+1}</b></td><td><b>${z.lo}–${z.hi}</b> lpm</td><td class="muted" style="font-size:12px">${ZDESC[i]}</td></tr>`).join('')}</table>`:'<div class="muted" style="font-size:12px">Tus zonas aparecen cuando tu coach registre tu edad y tu pulso en reposo.</div>'}
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:12px"><b>Mi plan</b><div class="pf-grid" style="margin-top:10px">
+    <div class="c"><div class="l">Entrenamiento</div>${v(plan)}</div>
+    <div class="c"><div class="l">Alimentación</div>${v(kc?fmtN(kc):null,kc?'kcal/día':'')}</div>
+  </div></div>
+  <div class="muted" style="font-size:12px;text-align:center;margin:4px 8px 12px">Estos datos los registra tu coach. Si algo no es correcto, <a href="#" onclick="event.preventDefault();openAthChat()" style="color:var(--green-d);font-weight:600">avísale por mensaje</a>.</div>`;
+}
 function myProfileHTML(a){const g=genderOf(a);return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${g==='Mujer'?10:0}px"><b>Mi perfil</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>${cycleHTML(a,'athlete')}</div>`}
 function setMyGender(g){const a=curA();if(genderOf(a)===g)return;S.evo.push({id:uid(),athleteId:a.id,date:TODAY,kind:'prof',gender:g,ts:Date.now()});pushActivity(a.id,'ready',`actualizó su género: ${g}`);commit()}
 const ACT=[[1.2,'Sedentario'],[1.375,'Ligero (1–3 días/sem)'],[1.55,'Moderado (3–5 días/sem)'],[1.725,'Intenso (6–7 días/sem)'],[1.9,'Muy intenso / doble sesión']];
@@ -1693,12 +1736,13 @@ function athleteHTML(){
   if(tab==='agenda') body=oldPlanCard(a)+agendaHTML(a);
   else if(tab==='plan') body=myPlanHTML(a);
   else if(tab==='cal') body=`<div class="card" style="overflow:hidden">${calHTML('athlete')}</div><div style="height:12px"></div>${dayListHTML(a,S.ui.selDay)}`;
-  else if(tab==='evo') body=myProfileHTML(a)+tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+compHTML(a,'athlete')+evoHTML(a.id,'athlete');
+  else if(tab==='evo') body=tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+evoHTML(a.id,'athlete');
   else if(tab==='nut') body=athNutHTML(a);
+  else if(tab==='perfil') body=profilePageHTML(a);
   else body=`<div class="card">${chatHTML(a.id,'athlete')}</div>`;
   return `<div class="phone">
   <div class="ph-top">
-    <div class="r1"><div class="avatar" style="background:rgba(255,255,255,.2)">${initials(a.name)}</div><div><div class="hi">Hola,</div><h3>${esc(a.name.split(' ')[0])}</h3></div>
+    <div class="r1"><div class="avatar" style="background:rgba(255,255,255,.2)" title="Mi perfil" onclick="S.ui.athTab='perfil';commit()">${initials(a.name)}</div><div><div class="hi">Hola,</div><h3>${esc(a.name.split(' ')[0])}</h3></div>
     <button class="icon-btn" onclick="openAthNotifs()">${ic('bell',16)}${unread?`<span class="badge-dot">${unread}</span>`:''}</button></div>
     <div class="today-sum">
       <svg class="ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 27 27)"/><text x="27" y="31" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${dn}/${todayT.length}</text></svg>
@@ -1713,6 +1757,7 @@ function athleteHTML(){
     <button class="${tab==='cal'?'on':''}" onclick="S.ui.athTab='cal';commit()">${ic('cal',17)}Calendario</button>
     <button class="${tab==='nut'?'on':''}" onclick="S.ui.athTab='nut';commit()">${ic('food',17)}Nutrición</button>
     <button class="${tab==='evo'?'on':''}" onclick="S.ui.athTab='evo';commit()">${ic('trend',17)}Progreso</button>
+    <button class="${tab==='perfil'?'on':''}" onclick="S.ui.athTab='perfil';commit()">${ic('coach',17)}Mi perfil</button>
     <button class="${tab==='chat'?'on':''}" onclick="openAthChat()">${ic('msg',17)}Coach${unreadChat?`<span class="n">${unreadChat}</span>`:''}</button>
   </div>
   <div class="ph-body">${body}</div></div>`;
