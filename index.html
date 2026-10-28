@@ -599,6 +599,13 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .ztable td{padding:7px 4px;border-bottom:1px solid var(--line-2)}
 .ztable .zd{width:12px;height:12px;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:6px}
 .ph-top .r1 .avatar{cursor:pointer}
+
+img.avatar{object-fit:cover;display:block;padding:0}
+.ph-top img.avatar{border:2px solid rgba(255,255,255,.6);cursor:pointer}
+.av-edit{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.av-edit .avatar{width:64px;height:64px;font-size:20px}
+.upl{position:relative;overflow:hidden;cursor:pointer}
+.upl input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 </style>
 </head>
 <body>
@@ -1154,7 +1161,7 @@ function sideListHTML(){
     const unread=S.activity.filter(x=>x.athleteId===a.id&&!x.read).length;
     const r=loadStats(a.id).acwr,z=acwrZone(r);
     return `<div class="ath-item ${a.id===S.ui.athleteId?'on':''}" onclick="selectAthlete('${a.id}')">
-      <div class="avatar" style="background:${a.color}">${initials(a.name)}</div>
+      ${avatarHTML(a)}
       <div style="flex:1;min-width:0"><div class="nm">${esc(a.name)}</div><div class="sub">${d}/${ts.length} entrenos · ACWR ${r!=null?r.toFixed(2):'—'}</div><div class="bar"><i style="width:${p}%"></i></div></div>
       ${tlDot(trafficDay(tlCtx(a.id),TODAY),12)}${unread?`<span class="pill missed" style="padding:1px 7px">${unread}</span>`:''}
     </div>`}).join('')||'<div class="muted" style="font-size:12px">Sin resultados</div>';
@@ -1194,7 +1201,7 @@ function coachHTML(compact){
       <button class="btn ghost sm" style="flex:0" onclick="openNewAthlete()">${ic('plus',14)}</button>
     </div>
     <div class="card cl-head">
-      <div class="avatar" style="background:${a.color}">${initials(a.name)}</div>
+      ${avatarHTML(a)}
       <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
@@ -1270,7 +1277,7 @@ function activityHTML(aid){
 function openCoachNotifs(){
   const list=S.activity.slice(0,25);
   openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('bell',18)} Actividad de tus atletas</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
-  <div class="modal-b" style="padding:0">${list.length?list.map(x=>{const a=S.athletes.find(y=>y.id===x.athleteId)||{name:'?',color:'#999'};return `<div class="feed-item ${x.read?'':'unread'}" style="cursor:pointer" onclick="closeModal();selectAthlete('${x.athleteId}')"><div class="avatar" style="background:${a.color};width:32px;height:32px;font-size:11px">${initials(a.name)}</div><div><div class="ft"><b>${esc(a.name)}</b> ${esc(x.text)}</div><div class="fm">${timeAgo(x.ts)}</div></div></div>`}).join(''):'<div class="empty-state">Sin novedades</div>'}</div></div>`);
+  <div class="modal-b" style="padding:0">${list.length?list.map(x=>{const a=S.athletes.find(y=>y.id===x.athleteId)||{name:'?',color:'#999'};return `<div class="feed-item ${x.read?'':'unread'}" style="cursor:pointer" onclick="closeModal();selectAthlete('${x.athleteId}')">${avatarHTML(a,"width:32px;height:32px;font-size:11px")}<div><div class="ft"><b>${esc(a.name)}</b> ${esc(x.text)}</div><div class="fm">${timeAgo(x.ts)}</div></div></div>`}).join(''):'<div class="empty-state">Sin novedades</div>'}</div></div>`);
   S.activity.forEach(x=>x.read=true);save();renderApp();
 }
 function openNewAthlete(id){
@@ -1279,6 +1286,7 @@ function openNewAthlete(id){
   const w=id?(lastWeight(id)??''):'';
   openModal(`<div class="modal"><div class="modal-h"><h3>${ic(id?'edit':'userplus',18)} ${id?'Perfil del cliente':'Añadir cliente'}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
   <div class="modal-b">
+    ${id?`<div id="na_av">${avatarUploader(a,'coach')}</div>`:''}
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:220px"><label>Nombre completo</label><input id="na_n" value="${esc(a.name)}" placeholder="Nombre del atleta"></div><div class="field" style="min-width:220px"><label>Correo (usuario del portal)</label><input id="na_e" type="email" value="${esc(a.email==='—'?'':a.email)}" placeholder="correo@ejemplo.com" ${id?'disabled':''}></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:110px"><label>Edad</label><input id="na_age" type="number" min="10" max="90" value="${esc(a.age||'')}" oninput="naZones()"></div><div class="field" style="min-width:110px"><label>Peso (kg)</label><input id="na_w" type="number" step="0.1" value="${esc(w)}"></div><div class="field" style="min-width:130px"><label>Género</label><select id="na_gen" onchange="naGender()"><option value="" ${!genderOf(a)?'selected':''}>Elegir…</option><option ${genderOf(a)==='Mujer'?'selected':''}>Mujer</option><option ${genderOf(a)==='Hombre'?'selected':''}>Hombre</option></select></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:170px"><label>Ocupación</label><input id="na_oc" value="${esc(a.occupation||'')}" placeholder="Ej. Contadora"></div><div class="field" style="min-width:170px"><label>Deporte</label><input id="na_sp" list="dl_sp" value="${esc(a.sport||'')}" placeholder="Ej. Running, crossfit"><datalist id="dl_sp">${['Gimnasio / pesas','Running','Crossfit','Ciclismo','Natación','Fútbol','Powerlifting','Triatlón','Funcional'].map(s=>`<option value="${s}">`).join('')}</datalist></div><div class="field" style="min-width:150px"><label>FC en reposo (lpm) ${qm('fcrep')}</label><input id="na_hr" type="number" min="30" max="120" value="${esc(a.hrRest||'')}" placeholder="Ej. 62" oninput="naZones()"></div></div>
@@ -1330,7 +1338,7 @@ function profilePageHTML(a){
   const act=(ACT.find(([f])=>f===(+a.activity||0))||[])[1];
   const plan=a.plan&&a.plan.name?a.plan.name.replace(/^Plan actual · /,'Plan de '):null,kc=c.kcalT||(a.nutrition&&a.nutrition.meals?a.nutrition.meals.reduce((s,m)=>s+(m.kcal||0),0):null);
   return `<div class="card" style="padding:14px;margin-bottom:12px">
-    <div class="pf-head"><div class="avatar" style="background:${a.color}">${initials(a.name)}</div><div style="min-width:0"><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.email||'')}</div>${a.goal?`<span class="pill done" style="margin-top:4px">${ic('target',11)} ${esc(a.goal)}</span>`:''}</div></div>
+    <div class="pf-head" style="display:block">${avatarUploader(a,'athlete')}</div><div class="pf-head"><div style="min-width:0"><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.email||'')}</div>${a.goal?`<span class="pill done" style="margin-top:4px">${ic('target',11)} ${esc(a.goal)}</span>`:''}</div></div>
   </div>
   <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b>Mis datos</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>
     ${cycleHTML(a,'athlete')}
@@ -1354,6 +1362,22 @@ function profilePageHTML(a){
   </div></div>
   <div class="muted" style="font-size:12px;text-align:center;margin:4px 8px 12px">Estos datos los registra tu coach. Si algo no es correcto, <a href="#" onclick="event.preventDefault();openAthChat()" style="color:var(--green-d);font-weight:600">avísale por mensaje</a>.</div>`;
 }
+/* Foto de perfil: se reduce en el navegador (320 px, JPEG) y se guarda en pt_evo; el atleta y el coach la pueden cambiar */
+const avatarOf=a=>{if(!a)return null;const e=S.evo.find(x=>x.kind==='avatar'&&x.athleteId===a.id&&x.img);return e?e.img:null};
+function avatarHTML(a,style='',extra=''){const img=avatarOf(a);return img?`<img class="avatar" src="${img}" alt="${esc(a.name)}" style="${style}" ${extra}>`:`<div class="avatar" style="background:${a.color};${style}" ${extra}>${initials(a.name)}</div>`}
+function avatarUploader(a,role){return `<div class="av-edit">${avatarHTML(a)}<div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn soft sm upl">${ic('plus',13)} ${avatarOf(a)?'Cambiar foto':'Subir foto de perfil'}<input type="file" accept="image/*" onchange="uploadAvatar('${a.id}',this.files[0],'${role}')"></label>${avatarOf(a)?`<button type="button" class="btn ghost sm" onclick="removeAvatar('${a.id}','${role}')">Quitar</button>`:''}</div></div>`}
+function shrinkToSquare(file,size=320){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{const s=Math.min(img.naturalWidth,img.naturalHeight),c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,(img.naturalWidth-s)/2,(img.naturalHeight-s)/2,s,s,0,0,size,size);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',0.82))};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('formato'))};img.src=url})}
+async function uploadAvatar(aid,file,role){
+  if(!file)return;if(!/^image\//.test(file.type)&&!/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)){toast('Elige una imagen');return}
+  if(file.size>20*1024*1024){toast('La imagen es muy pesada (máx. 20 MB)');return}
+  toast('Subiendo foto…');let data;try{data=await shrinkToSquare(file)}catch(e){toast('No se pudo leer esa imagen. Prueba con otra (JPG o PNG).');return}
+  const id='avatar-'+aid;let e=S.evo.find(x=>x.id===id);if(!e){e={id,athleteId:aid,kind:'avatar'};S.evo.push(e)}
+  Object.assign(e,{img:data,date:TODAY,ts:Date.now()});
+  if(role==='athlete')pushActivity(aid,'ready','actualizó su foto de perfil');
+  if(role==='coach'&&document.getElementById('na_av'))document.getElementById('na_av').innerHTML=avatarUploader(S.athletes.find(x=>x.id===aid),'coach');
+  commit();toast('Foto de perfil actualizada');
+}
+function removeAvatar(aid,role){const e=S.evo.find(x=>x.id==='avatar-'+aid);if(e){e.img='';e.ts=Date.now()}if(role==='coach'&&document.getElementById('na_av'))document.getElementById('na_av').innerHTML=avatarUploader(S.athletes.find(x=>x.id===aid),'coach');commit()}
 function myProfileHTML(a){const g=genderOf(a);return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${g==='Mujer'?10:0}px"><b>Mi perfil</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>${cycleHTML(a,'athlete')}</div>`}
 function setMyGender(g){const a=curA();if(genderOf(a)===g)return;S.evo.push({id:uid(),athleteId:a.id,date:TODAY,kind:'prof',gender:g,ts:Date.now()});pushActivity(a.id,'ready',`actualizó su género: ${g}`);commit()}
 const ACT=[[1.2,'Sedentario'],[1.375,'Ligero (1–3 días/sem)'],[1.55,'Moderado (3–5 días/sem)'],[1.725,'Intenso (6–7 días/sem)'],[1.9,'Muy intenso / doble sesión']];
@@ -1742,7 +1766,7 @@ function athleteHTML(){
   else body=`<div class="card">${chatHTML(a.id,'athlete')}</div>`;
   return `<div class="phone">
   <div class="ph-top">
-    <div class="r1"><div class="avatar" style="background:rgba(255,255,255,.2)" title="Mi perfil" onclick="S.ui.athTab='perfil';commit()">${initials(a.name)}</div><div><div class="hi">Hola,</div><h3>${esc(a.name.split(' ')[0])}</h3></div>
+    <div class="r1">${avatarOf(a)?avatarHTML(a,'',`title="Mi perfil" onclick="S.ui.athTab='perfil';commit()"`):`<div class="avatar" style="background:rgba(255,255,255,.2);cursor:pointer" title="Mi perfil" onclick="S.ui.athTab='perfil';commit()">${initials(a.name)}</div>`}<div><div class="hi">Hola,</div><h3>${esc(a.name.split(' ')[0])}</h3></div>
     <button class="icon-btn" onclick="openAthNotifs()">${ic('bell',16)}${unread?`<span class="badge-dot">${unread}</span>`:''}</button></div>
     <div class="today-sum">
       <svg class="ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 27 27)"/><text x="27" y="31" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${dn}/${todayT.length}</text></svg>
