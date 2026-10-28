@@ -835,7 +835,7 @@ async function loadData(){
     Object.keys(metaMap).forEach(e=>{if(!names.has(e))names.set(e,'')});
     athletes=[...names].map(([e,n])=>({goal:'',...metaMap[e],id:e,email:e,color:colorFor(e),name:(metaMap[e]&&metaMap[e].name)||n||e.split('@')[0]})).sort((x,y)=>x.name.localeCompare(y.name,'es'));
   }else{
-    const {data:pl}=await SB.from('plans').select('athlete_email,title,active').eq('athlete_email',ME.email).eq('active',true);plansOld=pl||[];
+    const {data:pl}=await SB.from('plans').select('athlete_email,title,active,data,created_at').eq('athlete_email',ME.email).eq('active',true);plansOld=pl||[];
     const m=metaMap[ME.email]||{};athletes=[{goal:'',...m,id:ME.email,email:ME.email,color:colorFor(ME.email),name:m.name||ME.name||ME.email.split('@')[0]}];
   }
   OLDPLANS={};plansOld.filter(p=>p.active!==false&&p.athlete_email).forEach(p=>{OLDPLANS[String(p.athlete_email).toLowerCase()]=p});
@@ -845,6 +845,7 @@ async function loadData(){
   if(!S.athletes.some(a=>a.id===S.ui.athleteId))S.ui.athleteId=S.athletes[0]?S.athletes[0].id:null;
   snapshot();
   if(IS_COACH)seedCoachData(plansOld);
+  else S.athletes.forEach(a=>{const op=OLDPLANS[a.id];if(!a.nutrition&&op&&op.data&&op.data.html){try{const r=parseOldNutrition(op.data.html);if(r&&r.nutrition)a.nutrition=r.nutrition}catch(e){}}});
   purgeSeedVideos();
 }
 /* Quita los videos de ejemplo que se precargaron al inicio; la biblioteca solo guarda lo que agrega el coach */
@@ -893,7 +894,7 @@ function parseOldNutrition(html){
   const num=x=>{if(x==null)return null;const m=String(x).replace(/,/g,'').match(/\d+(\.\d+)?/);return m?+m[0]:null};
   const s=x=>x==null?'':String(x).trim();
   const facts={},out={meals:[],menus:null,notes:[],snacks:[],macros:[],kcalTarget:null,label:''};
-  const meal=(time,name,foods,kcal,supl,water)=>({id:uid(),time:s(time),name:s(name),foods:(Array.isArray(foods)?foods:[foods]).map(s).filter(Boolean),kcal:num(kcal),supl:s(supl),water:s(water)});
+  let mi=0;const meal=(time,name,foods,kcal,supl,water)=>({id:'m'+(mi++),time:s(time),name:s(name),foods:(Array.isArray(foods)?foods:[foods]).map(s).filter(Boolean),kcal:num(kcal),supl:s(supl),water:s(water)});
   const DATA=grabLit(js,'DATA');
   if(DATA&&DATA.facts){const f=DATA.facts;facts.age=num(f.edad);facts.weight=num(f.peso);facts.height=num(f.estatura);facts.geb=num(f.geb);out.kcalTarget=num(f.kcal);facts.goal=s(f.objetivo)}
   if(DATA&&Array.isArray(DATA.meals))out.meals=DATA.meals.map(m=>meal(m.hora,m.nombre,m.alimento,m.kcal,m.supl||m.suplementos));
