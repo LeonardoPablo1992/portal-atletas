@@ -983,7 +983,7 @@ function scheduleAthletePlanAuto(aid,start,weeks=4){
   pushNotif(aid,`Tu plan ya está en tu calendario: del ${longDate(start)} al ${longDate(end)}`);
   return n;
 }
-function autoSchedule(aid){const a=S.athletes.find(x=>x.id===aid),op=OLDPLANS[aid],start=op&&op.created_at?op.created_at.slice(0,10):TODAY;
+function autoSchedule(aid){const a=S.athletes.find(x=>x.id===aid),op=OLDPLANS[aid],start=op&&op.created_at?fmt(new Date(op.created_at)):TODAY;
   const n=scheduleAthletePlanAuto(aid,start);closeModal();S.ui.month=start.slice(0,7);commit();toast(`${n} sesiones programadas para ${a.name.split(' ')[0]}`)}
 function setPlanPhase(aid,ph){const a=S.athletes.find(x=>x.id===aid);a.plan.phase=ph;S.ui.pv={id:a.plan.id,day:S.ui.pv?S.ui.pv.day:0,phase:ph};const t=S.plans.find(x=>x.id===a.plan.tplId);if(t)t.phase=ph;commit();openCoachPlan(aid);toast(`${a.name.split(' ')[0]} ahora va en la fase ${ph+1}`)}
 function oldPlanCard(a){if(a.plan&&a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="../"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
