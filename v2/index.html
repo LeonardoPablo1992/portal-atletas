@@ -519,6 +519,19 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .oldplan:hover{border-color:var(--green)}
 .oldplan .ti{width:34px;height:34px;border-radius:10px;background:var(--green-50);color:var(--green);display:grid;place-items:center;flex-shrink:0}
 @media (max-width:520px){.single-ath{padding:0}.single-ath .phone{max-width:none;border-radius:0;border:0;min-height:calc(100vh - 57px);box-shadow:none}.top .who{display:none}}
+
+.pchips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;margin-bottom:8px;scrollbar-width:thin}
+.pchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--ink-2)}
+.pchip.on{background:var(--green);color:#fff;border-color:var(--green)}
+.pchip.ph.on{background:var(--ink);border-color:var(--ink)}
+.pcat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 2px}
+.prow{display:flex;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line-2)}
+.prow .n{width:24px;height:24px;border-radius:7px;background:var(--bg);display:grid;place-items:center;font-size:12px;color:var(--muted);font-weight:600;flex-shrink:0}
+.prow .pn{flex:1;min-width:0;font-size:13px}
+.prow .pm{font-size:12px;color:var(--muted);margin-top:2px}
+.prow .skip{opacity:.45}
+.myplan-h{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.myplan-h .ti{width:40px;height:40px;border-radius:12px;background:var(--green-50);color:var(--green);display:grid;place-items:center;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -740,7 +753,7 @@ const TABLES={tasks:'pt_tasks',library:'pt_library',plans:'pt_templates',acts:'p
 const PERSON=['tasks','acts','evo','messages','activity','notifs'];
 const PALETTE=['#a855f7','#14b8a6','#f59e0b','#3b82f6','#ef4444','#ec4899','#10b981','#f97316','#0ea5e9','#8b5cf6'];
 const colorFor=s=>{let x=0;for(const c of String(s))x=(x*31+c.charCodeAt(0))>>>0;return PALETTE[x%PALETTE.length]};
-const META_KEYS=['name','goal','age','gender','occupation','sport','hrRest'];
+const META_KEYS=['name','goal','age','gender','occupation','sport','hrRest','plan'];
 const metaOf=a=>{const o={};META_KEYS.forEach(k=>{if(a[k]!=null&&a[k]!=='')o[k]=a[k]});return o};
 let SNAP={},flushT=null,flushing=false,dirty=false;
 const keyStr=(c,x)=>JSON.stringify(c==='athletes'?metaOf(x):x);
@@ -803,8 +816,72 @@ function seedCoachData(plansOld){
     if(!S.plans.some(t=>t.src===src)){const days=Object.entries(d.days).map(([dk,day])=>({name:(day&&day.label)||dk,rows:((day&&day.rows)||[]).filter(r=>r&&r.name).map(r=>{const ph=r.sets!=null&&r.sets!==''?[String(r.sets),String(r.reps??'')]:null;return {name:String(r.name).trim(),cat:CM[r.cat]||CATS[1],ph:[0,1,2,3].map(()=>ph&&[...ph]),tempo:r.tempo||'',rir:r.rir??'',rest:r.rest||'',video:''}})})).filter(x=>x.rows.length);
       if(days.length){S.plans.push({id:uid(),name:`Plan base · ${src}`,src,desc:p.title||'',wpp:2,days});ch=true}}
   });
+  /* Planes actuales del portal (HTML) → plan del atleta en la v2, con el mismo contenido */
+  S.athletes.forEach(a=>{const op=OLDPLANS[a.id];if(a.plan||!op||!op.data||!op.data.html)return;
+    let r=null;try{r=parseOldPlan(op.data.html)}catch(e){console.warn('No se pudo leer el plan de',a.id,e)}
+    if(!r)return;
+    const tpl={id:uid(),name:`Plan actual · ${a.name}`,src:a.name,athleteId:a.id,imported:true,desc:r.label?`${r.label} · importado de su plan del portal`:'Importado de su plan del portal',wpp:1,phase:0,days:r.days};
+    S.plans.push(tpl);a.plan={...JSON.parse(JSON.stringify(tpl)),tplId:tpl.id};
+    r.days.forEach(d=>d.rows.forEach(x=>{if(x.name&&!libFind(x.name))S.library.push({id:uid(),name:x.name,group:guessGroup(d.name),type:x.cat===CATS[0]?'Activación':x.cat===CATS[2]?'Accesorio':'Hipertrofia',video:'',notes:'',src:[a.name]})}));
+    ch=true;
+  });
   if(ch)save();
 }
+/* Lee el entrenamiento de los planes HTML actuales (6 formatos) y lo convierte al formato de plan de la v2 */
+function grabLit(t,marker){
+  let i=-1;const re=new RegExp('(?:const|let|var)\\s+'+marker+'\\s*=','g');const m=re.exec(t);if(!m)return null;i=m.index+m[0].length;
+  let j=i;while(/\s/.test(t[j]))j++;const open=t[j];if(open!=='{'&&open!=='[')return null;const close=open==='{'?'}':']';
+  let d=0,q=null;
+  for(let k=j;k<t.length;k++){const c=t[k];
+    if(q){if(c==='\\'){k++;continue}if(c===q)q=null;continue}
+    if(c==='"'||c==="'"||c==='`'){q=c;continue}
+    if(c==='/'&&t[k+1]==='/'){const n=t.indexOf('\n',k);if(n<0)break;k=n;continue}
+    if(c==='/'&&t[k+1]==='*'){const n=t.indexOf('*/',k+2);if(n<0)break;k=n+1;continue}
+    if(c===open)d++;else if(c===close&&!--d){try{return Function('"use strict";return ('+t.slice(j,k+1)+')')()}catch(e){return null}}
+  }
+  return null;
+}
+function parseOldPlan(html){
+  const js=(html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi)||[]).map(s=>s.replace(/^<script[^>]*>|<\/script>$/gi,'')).join('\n');
+  const nt=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+  const CMAP={rz:0,pr:1,ac:2,'musculo rezagado':0,rezagado:0,'musculo principal':1,principal:1,complementarios:2,complementario:2,warmup:0,main:1,extra:2};
+  const cat=c=>CATS[CMAP[nt(c)]??1];
+  const v=x=>x==null||/^(-|—|na|n\/a)$/i.test(String(x).trim())?'':String(x).trim();
+  const rest=x=>typeof x==='number'?`${x}'`:v(x);
+  const ph1=(s,r)=>v(s)?[v(s),v(r)]:null;
+  const row=(name,c,ph,tempo,rir,rs)=>({name:String(name||'').trim(),cat:cat(c),ph,tempo:v(tempo),rir:v(rir),rest:rest(rs),video:''});
+  const same=p=>[0,1,2,3].map(()=>p&&[...p]);
+  const fromRows=days=>Object.entries(days).map(([k,d])=>({name:k,rows:((d&&d.rows)||[]).filter(r=>r&&r.name).map(r=>row(r.name,r.cat,same(ph1(r.sets,r.reps)),r.tempo,r.rir,r.rest))})).filter(d=>d.rows.length);
+  let days=null,label='';
+  const DATA=grabLit(js,'DATA');
+  if(DATA&&DATA.muscles){
+    days=Object.entries(DATA.muscles).map(([k,rows])=>({name:k,rows:(rows||[]).filter(r=>r&&r.name).map(r=>row(r.name,r.cat,[1,2,3,4].map(n=>{const p=r['S'+n];return p?ph1(p[0],p[1]):null}),r.tempo,r.rir,r.rest))}));
+  }else if(DATA&&DATA.muscle_groups){
+    days=Object.entries(DATA.muscle_groups).map(([k,g])=>({name:k,rows:((g&&g.exercises)||[]).filter(r=>r&&r.ejercicio).map(r=>row(r.ejercicio,r.categoria,[1,2,3,4].map(n=>{const p=r['fase'+n];return p?ph1(p.series,p.reps):null}),r.tempo,r.rir,r.rest))}));
+  }else if(DATA&&DATA.months){
+    const order=grabLit(js,'MONTHS');const key=(Array.isArray(order)&&order.find(k=>DATA.months[k]))||Object.keys(DATA.months)[0];
+    const m=DATA.months[key];label=(m&&m.label)||'';days=fromRows((m&&m.days)||{});
+  }else if(DATA&&DATA.days){
+    days=fromRows(DATA.days);
+  }
+  if(!days){
+    const MON=grabLit(js,'MONTHS'),ORD=grabLit(js,'MONTH_ORDER');
+    if(MON&&!Array.isArray(MON)){const keys=Array.isArray(ORD)?ORD.filter(k=>MON[k]):Object.keys(MON);const m=MON[keys[keys.length-1]];label=(m&&m.label)||'';
+      days=Object.entries((m&&m.days)||{}).map(([k,d])=>({name:k,rows:((d&&d.exercises)||[]).filter(r=>r&&(r.ejercicio||r.name)).map(r=>row(r.ejercicio||r.name,r.categoria||r.cat,same(ph1(r.series??r.sets,r.reps)),r.tempo,r.rir,r.rest))}));}
+  }
+  if(!days){
+    const out=[];const reDay=/(\w+)\s*:\s*\{\s*title\s*:\s*["']([^"']+)["']([\s\S]*?)\n\s{4}\}/g;let m;
+    while((m=reDay.exec(js))){const rows=[];const reG=/(warmup|main|extra)\s*:\s*\[([\s\S]*?)\]/g;let g;
+      while((g=reG.exec(m[3]))){const reE=/ex\(\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*\)/g;let e;
+        while((e=reE.exec(g[2])))rows.push(row(e[2],g[1],same(ph1(e[3],e[4])),e[5],e[6],e[7]))}
+      if(rows.length)out.push({name:m[2],rows})}
+    if(out.length)days=out;
+  }
+  if(!days)return null;
+  days=days.filter(d=>d.rows.length);
+  return days.length?{days,label}:null;
+}
+
 async function boot(){
   if(!window.supabase){document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">No se pudo cargar la conexión. Revisa tu internet y recarga la página.</div>';return}
   SB=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{global:{fetch:sbFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
@@ -850,7 +927,46 @@ function showCreds(name,email,pw,existed,pid){
     <div class="field"><label>Mensaje listo para enviar</label><textarea id="credMsg" readonly rows="8">${esc(msg)}</textarea></div></div>
     <div class="modal-f"><button class="btn ghost" onclick="const t=document.getElementById('credMsg');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Mensaje copiado')).catch(()=>{document.execCommand('copy');toast('Mensaje copiado')})">${ic('copy',14)} Copiar mensaje</button><button class="btn primary" onclick="${pid?`openAssignPlan('${pid}')`:'closeModal()'}">${pid?'Continuar: asignar plan':'Listo'}</button></div></div>`);
 }
-function oldPlanCard(a){const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="../"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
+function planMulti(p){return p.days.some(d=>d.rows.some(r=>JSON.stringify(r.ph[0])!==JSON.stringify(r.ph[1])||JSON.stringify(r.ph[0])!==JSON.stringify(r.ph[3])))}
+function planViewHTML(p,mode){
+  if(!S.ui.pv||S.ui.pv.id!==p.id)S.ui.pv={id:p.id,day:0,phase:p.phase??0};
+  const pv=S.ui.pv,di=Math.min(pv.day,p.days.length-1),d=p.days[di],ph=pv.phase,multi=planMulti(p);
+  let h='';
+  if(multi)h+=`<div class="pchips">${[0,1,2,3].map(i=>`<button class="pchip ph ${ph===i?'on':''}" onclick="pvSet('phase',${i})">Fase ${i+1}${(p.phase??0)===i?' · actual':''}</button>`).join('')}</div>`;
+  h+=`<div class="pchips">${p.days.map((x,i)=>`<button class="pchip ${i===di?'on':''}" onclick="pvSet('day',${i})">${esc(x.name)}</button>`).join('')}</div>`;
+  let n=0;
+  CATS.forEach(c=>{const rows=d.rows.filter(r=>(CATS.includes(r.cat)?r.cat:CATS[1])===c);if(!rows.length)return;
+    h+=`<div class="pcat">${c}</div>`;
+    rows.forEach(r=>{n++;const q=r.ph[ph],vurl=r.video||(libFind(r.name)||{}).video||'',vid=vInfo(vurl);
+      h+=`<div class="prow"><span class="n">${n}</span><div class="pn ${q?'':'skip'}"><b>${esc(r.name)}</b><div class="pm">${q?`<b>${esc(q[0])}</b> × <b>${esc(q[1]||'—')}</b>`:'No va en esta fase'}${r.tempo?` · tempo ${esc(r.tempo)}`:''}${r.rir!==''&&r.rir!=null?` · RIR ${esc(r.rir)}`:''}${r.rest?` · desc. ${esc(r.rest)}`:''}</div></div>${vid?`<button class="vprev" title="Ver video" onclick="playVideo('${jsq(vurl)}','${jsq(r.name)}')">${ic('play',12,true)}</button>`:''}</div>`})});
+  if(mode==='athlete')h+=`<button class="btn primary full" style="margin-top:14px" onclick="startPlanDay(${di})">${ic('play',14,true)} Entrenar «${esc(d.name)}» hoy</button>`;
+  return h;
+}
+function pvSet(k,v){S.ui.pv[k]=v;if(document.getElementById('coachPlanModal'))openCoachPlan(S.ui.pvA);else renderApp()}
+function myPlanHTML(a){
+  const p=a.plan;
+  if(!p)return `${oldPlanCard(a)}<div class="card empty-state">${ic('layers',26)}<br>Tu coach aún no carga tu plan aquí.</div>`;
+  return `<div class="card" style="padding:14px"><div class="myplan-h"><span class="ti">${ic('layers',20)}</span><div style="flex:1;min-width:0"><b style="font-size:15px">Mi plan de entrenamiento</b><div class="muted" style="font-size:12px">${p.days.length} rutinas${planMulti(p)?` · vas en la fase ${(p.phase??0)+1}`:''}${p.desc&&/·/.test(p.desc)?' · '+esc(p.desc.split(' · ')[0]):''}</div></div></div>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">Elige la rutina que te toca y toca <b>Entrenar hoy</b>: podrás marcar tus series, anotar el peso y ver los videos.</div>
+    ${planViewHTML(p,'athlete')}</div>`;
+}
+function startPlanDay(di){
+  const a=curA(),p=a.plan,d=p.days[di],ph=S.ui.pv&&S.ui.pv.id===p.id?S.ui.pv.phase:(p.phase??0);
+  let t=S.tasks.find(x=>x.athleteId===a.id&&x.date===TODAY&&x.fromPlan&&x.planDay===di&&x.status!=='done');
+  if(!t){t={id:uid(),athleteId:a.id,date:TODAY,type:'entrenamiento',title:`${d.name}${planMulti(p)?` · F${ph+1}`:''}`,data:{blocks:dayToBlocks(d,ph),attach:[]},status:'pending',progress:{sets:{},kg:{}},feedback:null,createdAt:Date.now(),fromPlan:true,planDay:di,phase:ph+1,planName:p.name};S.tasks.push(t)}
+  S.ui.athTab='agenda';S.ui.selDay=TODAY;commit();openAthTask(t.id);
+}
+function ensureTpl(a){let t=S.plans.find(x=>x.id===a.plan.tplId);if(!t){t={...JSON.parse(JSON.stringify(a.plan)),id:uid(),athleteId:a.id};delete t.tplId;S.plans.push(t);a.plan.tplId=t.id;save()}return t}
+function openCoachPlan(aid){
+  const a=S.athletes.find(x=>x.id===aid);if(!a||!a.plan)return;S.ui.pvA=aid;const p=a.plan;
+  openModal(`<div class="modal" id="coachPlanModal"><div class="modal-h"><h3>${ic('layers',20)} ${esc(p.name)}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
+  <div class="modal-b"><div class="muted" style="font-size:12px;margin-bottom:10px">${esc(p.desc||'')} · ${p.days.length} días · ${p.days.reduce((s,d)=>s+d.rows.length,0)} ejercicios</div>
+  ${planMulti(p)?`<div class="field" style="max-width:230px"><label>Fase actual del atleta</label><select onchange="setPlanPhase('${aid}',+this.value)">${[0,1,2,3].map(i=>`<option value="${i}" ${(p.phase??0)===i?'selected':''}>Fase ${i+1}</option>`).join('')}</select></div>`:''}
+  ${planViewHTML(p,'coach')}</div>
+  <div class="modal-f"><span class="muted" style="font-size:12px;flex:1">El atleta lo ve en su pestaña «Mi plan».</span><button class="btn ghost" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openPlanEditor(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('edit',14)} Editar plan</button><button class="btn primary" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openAssignPlan(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('cal',14)} Programar en calendario</button></div></div>`);
+}
+function setPlanPhase(aid,ph){const a=S.athletes.find(x=>x.id===aid);a.plan.phase=ph;S.ui.pv={id:a.plan.id,day:S.ui.pv?S.ui.pv.day:0,phase:ph};const t=S.plans.find(x=>x.id===a.plan.tplId);if(t)t.phase=ph;commit();openCoachPlan(aid);toast(`${a.name.split(' ')[0]} ahora va en la fase ${ph+1}`)}
+function oldPlanCard(a){if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="../"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
 
 const curA=()=>S.athletes.find(a=>a.id===S.ui.athleteId)||S.athletes[0];
 const tasksOn=(aid,ds)=>S.tasks.filter(t=>t.athleteId===aid&&t.date===ds);
@@ -945,6 +1061,7 @@ function coachHTML(compact){
       <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
+        ${a.plan?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
         <button class="btn ghost" onclick="openNewAthlete('${a.id}')">${ic('edit',15)} Perfil</button>
         <button class="btn yt" onclick="openAddTask(TODAY,'video')">${ic('video',16)} Video</button>
         <button class="btn primary" onclick="openAddTask(TODAY,'entrenamiento')">${ic('plus',16)} Tarea</button>
@@ -1382,6 +1499,7 @@ function athleteHTML(){
   const C=2*Math.PI*22;
   let body='';
   if(tab==='agenda') body=oldPlanCard(a)+agendaHTML(a);
+  else if(tab==='plan') body=myPlanHTML(a);
   else if(tab==='cal') body=`<div class="card" style="overflow:hidden">${calHTML('athlete')}</div><div style="height:12px"></div>${dayListHTML(a,S.ui.selDay)}`;
   else if(tab==='evo') body=tlAthHTML(a.id)+athleteLoadHTML(a.id)+evoHTML(a.id,'athlete');
   else body=`<div class="card">${chatHTML(a.id,'athlete')}</div>`;
@@ -1398,6 +1516,7 @@ function athleteHTML(){
   </div>
   <div class="ph-tabs">
     <button class="${tab==='agenda'?'on':''}" onclick="S.ui.athTab='agenda';commit()">${ic('dumbbell',17)}Hoy</button>
+    <button class="${tab==='plan'?'on':''}" onclick="S.ui.athTab='plan';commit()">${ic('layers',17)}Mi plan</button>
     <button class="${tab==='cal'?'on':''}" onclick="S.ui.athTab='cal';commit()">${ic('cal',17)}Calendario</button>
     <button class="${tab==='evo'?'on':''}" onclick="S.ui.athTab='evo';commit()">${ic('trend',17)}Progreso</button>
     <button class="${tab==='chat'?'on':''}" onclick="openAthChat()">${ic('msg',17)}Coach${unreadChat?`<span class="n">${unreadChat}</span>`:''}</button>
@@ -1751,6 +1870,7 @@ function savePlan(assign){
   p.days=days;
   let added=0;p.days.forEach(d=>d.rows.forEach(r=>{const ex=libFind(r.name);if(!ex){S.library.push({id:uid(),name:r.name.trim(),group:guessGroup(d.name),type:'Hipertrofia',video:r.video||'',notes:'',src:['Coach']});added++}else if(r.video&&!ex.video)ex.video=r.video}));
   if(p.id){S.plans[S.plans.findIndex(x=>x.id===p.id)]=p}else{p.id=uid();S.plans.push(p)}
+  if(p.athleteId){const ath=S.athletes.find(x=>x.id===p.athleteId);if(ath)ath.plan={...JSON.parse(JSON.stringify(p)),tplId:p.id,phase:ath.plan?(ath.plan.phase??0):0}}
   S.ui.section='plantillas';closeModal();commit();toast(`Plantilla guardada${added?` · ${added} ejercicio(s) nuevos en la biblioteca`:''}`);
   if(assign)openAssignPlan(p.id);
 }
