@@ -576,6 +576,16 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .zdist .zr{display:grid;grid-template-columns:86px 1fr 52px;gap:8px;align-items:center;font-size:12px}
 .zdist .zb{height:12px;border-radius:99px;background:#eef0f2;overflow:hidden}
 .zdist .zb i{display:block;height:100%;border-radius:99px}
+
+.cyc{border:1.5px solid #fecdd3;background:#fff7f8;border-radius:14px;padding:12px;margin-bottom:12px}
+.cyc .ch{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cyc .ico{width:34px;height:34px;border-radius:99px;display:grid;place-items:center;background:#fff1f2;color:#e11d48;flex-shrink:0}
+.cyc.on .ico{background:#e11d48;color:#fff}
+.cyc .ph{font-size:13px;color:var(--ink-2);margin-top:8px}
+.phase-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#fff1f2;color:#be123c}
+.gseg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:#fff}
+.gseg button{border:0;background:transparent;border-radius:999px;padding:6px 16px;font-weight:700;font-size:13px;color:var(--ink-2)}
+.gseg button.on{background:var(--green);color:#fff}
 </style>
 </head>
 <body>
@@ -794,7 +804,7 @@ const TABLES={tasks:'pt_tasks',library:'pt_library',plans:'pt_templates',acts:'p
 const PERSON=['tasks','acts','evo','messages','activity','notifs'];
 const PALETTE=['#a855f7','#14b8a6','#f59e0b','#3b82f6','#ef4444','#ec4899','#10b981','#f97316','#0ea5e9','#8b5cf6'];
 const colorFor=s=>{let x=0;for(const c of String(s))x=(x*31+c.charCodeAt(0))>>>0;return PALETTE[x%PALETTE.length]};
-const META_KEYS=['name','goal','age','gender','occupation','sport','hrRest','plan','nutrition','nutImp','height','bodyFat','muscleMass','geb','activity','kcalTarget','goalWeight'];
+const META_KEYS=['name','goal','age','gender','genderTs','occupation','sport','hrRest','plan','nutrition','nutImp','height','bodyFat','muscleMass','geb','activity','kcalTarget','goalWeight'];
 const metaOf=a=>{const o={};META_KEYS.forEach(k=>{if(a[k]!=null&&a[k]!=='')o[k]=a[k]});return o};
 let SNAP={},flushT=null,flushing=false,dirty=false;
 const keyStr=(c,x)=>JSON.stringify(c==='athletes'?metaOf(x):x);
@@ -1251,15 +1261,17 @@ function openCoachNotifs(){
   S.activity.forEach(x=>x.read=true);save();renderApp();
 }
 function openNewAthlete(id){
+  S.ui.cycA=id||null;
   const a=id?S.athletes.find(x=>x.id===id):{name:'',email:'',age:'',gender:'Mujer',occupation:'',sport:'',hrRest:'',goal:'Hipertrofia'};
   const w=id?(lastWeight(id)??''):'';
   openModal(`<div class="modal"><div class="modal-h"><h3>${ic(id?'edit':'userplus',18)} ${id?'Perfil del cliente':'Añadir cliente'}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
   <div class="modal-b">
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:220px"><label>Nombre completo</label><input id="na_n" value="${esc(a.name)}" placeholder="Nombre del atleta"></div><div class="field" style="min-width:220px"><label>Correo (usuario del portal)</label><input id="na_e" type="email" value="${esc(a.email==='—'?'':a.email)}" placeholder="correo@ejemplo.com" ${id?'disabled':''}></div></div>
-    <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:110px"><label>Edad</label><input id="na_age" type="number" min="10" max="90" value="${esc(a.age||'')}" oninput="naZones()"></div><div class="field" style="min-width:110px"><label>Peso (kg)</label><input id="na_w" type="number" step="0.1" value="${esc(w)}"></div><div class="field" style="min-width:130px"><label>Género</label><select id="na_gen"><option ${a.gender==='Mujer'?'selected':''}>Mujer</option><option ${a.gender==='Hombre'?'selected':''}>Hombre</option></select></div></div>
+    <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:110px"><label>Edad</label><input id="na_age" type="number" min="10" max="90" value="${esc(a.age||'')}" oninput="naZones()"></div><div class="field" style="min-width:110px"><label>Peso (kg)</label><input id="na_w" type="number" step="0.1" value="${esc(w)}"></div><div class="field" style="min-width:130px"><label>Género</label><select id="na_gen" onchange="naGender()"><option value="" ${!genderOf(a)?'selected':''}>Elegir…</option><option ${genderOf(a)==='Mujer'?'selected':''}>Mujer</option><option ${genderOf(a)==='Hombre'?'selected':''}>Hombre</option></select></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:170px"><label>Ocupación</label><input id="na_oc" value="${esc(a.occupation||'')}" placeholder="Ej. Contadora"></div><div class="field" style="min-width:170px"><label>Deporte</label><input id="na_sp" list="dl_sp" value="${esc(a.sport||'')}" placeholder="Ej. Running, crossfit"><datalist id="dl_sp">${['Gimnasio / pesas','Running','Crossfit','Ciclismo','Natación','Fútbol','Powerlifting','Triatlón','Funcional'].map(s=>`<option value="${s}">`).join('')}</datalist></div><div class="field" style="min-width:150px"><label>FC en reposo (lpm) ${qm('fcrep')}</label><input id="na_hr" type="number" min="30" max="120" value="${esc(a.hrRest||'')}" placeholder="Ej. 62" oninput="naZones()"></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:110px"><label>Estatura (cm)</label><input id="na_h" type="number" min="100" max="230" value="${esc(a.height||'')}" oninput="naComp()"></div><div class="field" style="min-width:110px"><label>% grasa</label><input id="na_bf" type="number" step="0.1" min="3" max="70" value="${esc(a.bodyFat??(id?lastEvoOf(id,'grasa')??'':''))}" oninput="naComp()"></div><div class="field" style="min-width:130px"><label>Masa muscular (kg) ${qm('imm')}</label><input id="na_mm" type="number" step="0.1" value="${esc(a.muscleMass||'')}" oninput="naComp()"></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:200px"><label>Nivel de actividad (para el GET)</label><select id="na_act" onchange="naComp()">${ACT.map(([f,l])=>`<option value="${f}" ${(+a.activity||1.55)===f?'selected':''}>${l} · ×${f}</option>`).join('')}</select></div><div class="field" style="min-width:120px"><label>GEB medido (opcional)</label><input id="na_geb" type="number" value="${esc(a.geb||'')}" placeholder="auto" oninput="naComp()"></div><div class="field" style="min-width:120px"><label>Kcal del plan</label><input id="na_kt" type="number" value="${esc(a.kcalTarget||'')}" placeholder="kcal/día"></div><div class="field" style="min-width:110px"><label>Peso meta (kg)</label><input id="na_gw" type="number" step="0.1" value="${esc(a.goalWeight||'')}"></div></div>
+    <div id="na_cyc">${id&&genderOf(a)==='Mujer'?cycleHTML(a,'coach'):''}</div>
     <div id="na_comp"></div>
     <div id="na_z"></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:180px"><label>Objetivo</label><select id="na_g">${['Hipertrofia','Definición','Fuerza','Recomposición corporal','Rendimiento deportivo','Salud general'].map(g=>`<option ${a.goal===g?'selected':''}>${g}</option>`).join('')}</select></div>
@@ -1268,10 +1280,39 @@ function openNewAthlete(id){
   <div class="modal-f"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveAthlete('${id||''}')">${id?'Guardar cambios':'Crear cliente'}</button></div></div>`);
   naZones();naComp();
 }
+function naGender(){const el=document.getElementById('na_cyc'),id=S.ui.cycA;if(!el)return;const a=S.athletes.find(x=>x.id===id);
+  if(gv('na_gen')==='Mujer'){if(a){const tmp={...a,gender:'Mujer',genderTs:Date.now()+1};el.innerHTML=cycleHTML(tmp,'coach')}else el.innerHTML='<div class="cyc"><div class="ch"><span class="ico">'+ic('drop',17)+'</span><div style="flex:1"><b>Fase menstrual</b><div class="muted" style="font-size:12px">Podrás incluir este dato después de crear el cliente.</div></div></div></div>'}else el.innerHTML='';naComp()}
 function naComp(){const el=document.getElementById('na_comp');if(!el)return;const tmp={id:'__tmp',age:gv('na_age'),gender:gv('na_gen'),height:gv('na_h'),bodyFat:gv('na_bf'),muscleMass:gv('na_mm'),activity:gv('na_act'),geb:gv('na_geb')};const w=parseFloat(gv('na_w'));const c=bodyComp(tmp,isNaN(w)?null:w);
   el.innerHTML=(c.imc||c.geb)?`<div class="note" style="margin-bottom:12px">${c.imc?`IMC <b>${c.imc.toFixed(1)}</b> · `:''}${c.lean?`Masa libre de grasa <b>${c.lean.toFixed(1)} kg</b> · `:''}${c.imm?`IMM <b>${c.imm.toFixed(1)}</b> · `:''}${c.geb?`GEB <b>${fmtN(c.geb)}</b> kcal (${c.gebSrc}) · GET <b>${fmtN(c.get)}</b> kcal`:''}</div>`:''}
 function naZones(){const el=document.getElementById('na_z');if(!el)return;const k=karvonen({age:gv('na_age'),hrRest:gv('na_hr')});el.innerHTML=k?`<div class="note" style="margin-bottom:12px"><b>Zonas de FC (Karvonen)</b> · FC máx ${k.max} lpm · FC de reserva ${k.res} lpm<br>${k.z.map((z,i)=>`Z${i+1}: ${z.lo}–${z.hi}`).join(' · ')} lpm</div>`:`<div class="muted" style="font-size:12px;margin:-4px 0 12px">Con la edad y la FC en reposo se calculan sus zonas de entrenamiento (Karvonen).</div>`}
 function lastWeight(aid){const e=S.evo.filter(x=>x.athleteId===aid&&x.peso!=null).sort((x,y)=>y.date.localeCompare(x.date))[0];return e?e.peso:null}
+/* Género: lo puede cambiar el coach (perfil) o el atleta (Progreso); gana el cambio más reciente */
+function genderOf(a){if(!a)return '';const p=S.evo.filter(e=>e.kind==='prof'&&e.athleteId===a.id&&e.gender).sort((x,y)=>y.ts-x.ts)[0];return p&&(!a.genderTs||p.ts>a.genderTs)?p.gender:(a.gender||'')}
+/* Ciclo menstrual (solo mujeres): último registro tipo 'cycle' en pt_evo; lo pueden editar atleta y coach */
+const cycleOf=aid=>S.evo.filter(e=>e.kind==='cycle'&&e.athleteId===aid).sort((x,y)=>y.ts-x.ts)[0]||null;
+function cyclePhase(c,ds){
+  if(!c||!c.tracking||!c.last)return null;const L=+c.len||28,P=+c.plen||5,diff=Math.round((parse(ds||TODAY)-parse(c.last))/864e5);if(diff<0)return null;
+  const day=diff%L+1,ov=L-14,ph=day<=P?'Menstrual':day<ov-1?'Folicular':day<=ov+1?'Ovulatoria':'Lútea',next=addDays(c.last,(Math.floor(diff/L)+1)*L);
+  return {day,len:L,phase:ph,next,menstrual:ph==='Menstrual'};
+}
+const PH_TIP={Menstrual:'Días de sangrado. Es normal tener menos energía; se puede bajar un poco la intensidad si hace falta.',Folicular:'La energía suele subir. Buen momento para entrenamientos más pesados.',Ovulatoria:'Fuerza y energía altas. Cuida la técnica: hay un poco más de laxitud en articulaciones.',Lútea:'Puede haber más cansancio, hinchazón o antojos. La sensación de esfuerzo suele ser mayor.'};
+function cycleHTML(a,role){
+  if(genderOf(a)!=='Mujer')return '';const c=cycleOf(a.id),on=!!(c&&c.tracking),p=cyclePhase(c),pre=role==='coach'?'nc':'ac';
+  return `<div class="cyc ${on?'on':''}"><div class="ch"><span class="ico">${ic('drop',17,on)}</span><div style="flex:1;min-width:150px"><b>Fase menstrual</b>${qm('ciclo')}<div class="muted" style="font-size:12px">${on?(p?`Día ${p.day} de ${p.len} · <b>${p.phase}</b> · próxima menstruación aprox. ${dmy(p.next).slice(0,5)}`:'Registrado · agrega la fecha de inicio de la última menstruación'):'Incluir este dato ayuda a ajustar la intensidad del entrenamiento'}</div></div>
+    <button type="button" class="btn ${on?'ghost':'soft'} sm" onclick="cycToggle('${a.id}','${role}')">${on?'Quitar dato':'Incluir fase menstrual'}</button></div>
+    ${on?`<div class="row" style="flex-wrap:wrap;margin-top:10px;align-items:end"><div class="field" style="min-width:150px;margin:0"><label>Inicio de la última menstruación</label><input type="date" id="${pre}_last" max="${TODAY}" value="${esc(c.last||'')}"></div><div class="field" style="min-width:110px;margin:0"><label>Duración del ciclo (días)</label><input type="number" id="${pre}_len" min="20" max="45" value="${esc(c.len||28)}"></div><div class="field" style="min-width:110px;margin:0"><label>Días de sangrado</label><input type="number" id="${pre}_plen" min="2" max="10" value="${esc(c.plen||5)}"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn soft sm" onclick="cycSave('${a.id}','${role}',true)">${ic('drop',12,true)} Hoy empezó</button><button type="button" class="btn primary sm" onclick="cycSave('${a.id}','${role}')">Guardar</button></div></div>
+      ${p?`<div class="ph"><span class="phase-pill">${ic('drop',11,true)} Fase ${p.phase}</span> ${PH_TIP[p.phase]}</div>`:''}`:''}
+  </div>`;
+}
+function cycWrite(aid,data){const prev=cycleOf(aid)||{};S.evo.push({id:uid(),athleteId:aid,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:prev.last||'',len:prev.len||28,plen:prev.plen||5,...data})}
+function cycRerender(role){const el=document.getElementById('na_cyc');if(role==='coach'&&el){el.innerHTML=cycleHTML(S.athletes.find(x=>x.id===S.ui.cycA),'coach');save();renderApp()}else commit()}
+function cycToggle(aid,role){S.ui.cycA=aid;const c=cycleOf(aid);cycWrite(aid,{tracking:!(c&&c.tracking)});if(role==='athlete')pushActivity(aid,'ready',c&&c.tracking?'quitó el dato de fase menstrual':'empezó a registrar su fase menstrual');cycRerender(role)}
+function cycSave(aid,role,today){S.ui.cycA=aid;const pre=role==='coach'?'nc':'ac';const last=today?TODAY:gv(pre+'_last'),len=+gv(pre+'_len')||28,plen=+gv(pre+'_plen')||5;
+  if(!last){toast('Pon la fecha de inicio de la última menstruación');return}if(len<20||len>45){toast('La duración del ciclo suele estar entre 20 y 45 días');return}
+  cycWrite(aid,{tracking:true,last,len,plen});if(role==='athlete'&&today)pushActivity(aid,'ready','registró inicio de menstruación');cycRerender(role);toast('Dato guardado')}
+function myProfileHTML(a){const g=genderOf(a);return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${g==='Mujer'?10:0}px"><b>Mi perfil</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>${cycleHTML(a,'athlete')}</div>`}
+function setMyGender(g){const a=curA();if(genderOf(a)===g)return;S.evo.push({id:uid(),athleteId:a.id,date:TODAY,kind:'prof',gender:g,ts:Date.now()});pushActivity(a.id,'ready',`actualizó su género: ${g}`);commit()}
 const ACT=[[1.2,'Sedentario'],[1.375,'Ligero (1–3 días/sem)'],[1.55,'Moderado (3–5 días/sem)'],[1.725,'Intenso (6–7 días/sem)'],[1.9,'Muy intenso / doble sesión']];
 function lastEvoOf(aid,k){const e=S.evo.filter(x=>x.athleteId===aid&&x[k]!=null&&x[k]!=='').sort((x,y)=>y.date.localeCompare(x.date))[0];return e?+e[k]:null}
 function bodyComp(a,wo){
@@ -1281,7 +1322,7 @@ function bodyComp(a,wo){
   let geb=null,gebSrc='';
   if(+a.geb){geb=+a.geb;gebSrc='registrado por el coach'}
   else if(lean){geb=370+21.6*lean;gebSrc='Katch-McArdle (con masa libre de grasa)'}
-  else if(w&&h&&age&&a.gender){geb=10*w+6.25*h-5*age+(a.gender==='Hombre'?5:-161);gebSrc='Mifflin-St Jeor'}
+  else if(w&&h&&age&&genderOf(a)){geb=10*w+6.25*h-5*age+(genderOf(a)==='Hombre'?5:-161);gebSrc='Mifflin-St Jeor'}
   const get=geb?geb*act:null;
   return {w,h,bf,mm,age,act,imc,fatKg,lean,imm,immSrc,geb,gebSrc,get,kcalT:+a.kcalTarget||(a.nutrition&&a.nutrition.kcalTarget)||null};
 }
@@ -1299,14 +1340,14 @@ function compHTML(a,role){
     <div class="c"><div class="l">Kcal del plan</div><div class="v">${n0(c.kcalT)}<small> kcal</small></div>${c.kcalT&&c.get?`<div class="x">${c.kcalT<c.get?'déficit':'superávit'} de ${n0(Math.abs(c.get-c.kcalT))} kcal</div>`:''}</div>
   </div></div>`;
 }
-function profileChips(a){const w=lastWeight(a.id),bc=bodyComp(a);const it=[a.gender,a.age&&`${a.age} años`,w&&`${w} kg`,a.height&&`${a.height} cm`,bc.bf!=null&&`${bc.bf}% grasa`,bc.get&&`GET ${fmtN(bc.get)} kcal`,a.occupation,a.sport,a.hrRest&&`FC reposo ${a.hrRest} lpm`,!(a.plan&&a.plan.scheduled)&&OLDPLANS[a.id]&&`Plan actual: ${OLDPLANS[a.id].title||'activo'}`].filter(Boolean);return it.length?`<div class="prof">${it.map(x=>`<span class="gtag">${esc(x)}</span>`).join('')}</div>`:''}
+function profileChips(a){const w=lastWeight(a.id),bc=bodyComp(a);const cp=genderOf(a)==='Mujer'?cyclePhase(cycleOf(a.id)):null;const it=[genderOf(a),cp&&`Fase ${cp.phase.toLowerCase()} · día ${cp.day}`,a.age&&`${a.age} años`,w&&`${w} kg`,a.height&&`${a.height} cm`,bc.bf!=null&&`${bc.bf}% grasa`,bc.get&&`GET ${fmtN(bc.get)} kcal`,a.occupation,a.sport,a.hrRest&&`FC reposo ${a.hrRest} lpm`,!(a.plan&&a.plan.scheduled)&&OLDPLANS[a.id]&&`Plan actual: ${OLDPLANS[a.id].title||'activo'}`].filter(Boolean);return it.length?`<div class="prof">${it.map(x=>`<span class="gtag">${esc(x)}</span>`).join('')}</div>`:''}
 function saveAthlete(id){
   const n=gv('na_n');if(!n){toast('Escribe un nombre');return}
   const e=gv('na_e');if(e&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('Revisa el correo');return}
   if(e&&S.athletes.some(x=>x.id!==id&&x.email.toLowerCase()===e.toLowerCase())){toast('Ya existe un cliente con ese correo');return}
   const hr=+gv('na_hr');if(hr&&(hr<30||hr>120)){toast('La FC en reposo debe estar entre 30 y 120 lpm');return}
   const age=+gv('na_age');if(age&&(age<10||age>90)){toast('Revisa la edad');return}
-  const data={name:n,email:e||'—',goal:gv('na_g'),age:gv('na_age'),gender:gv('na_gen'),occupation:gv('na_oc'),sport:gv('na_sp'),hrRest:gv('na_hr'),height:gv('na_h'),bodyFat:gv('na_bf'),muscleMass:gv('na_mm'),activity:gv('na_act'),geb:gv('na_geb'),kcalTarget:gv('na_kt'),goalWeight:gv('na_gw')};
+  const data={name:n,email:e||'—',goal:gv('na_g'),age:gv('na_age'),gender:gv('na_gen'),genderTs:(id&&gv('na_gen')===genderOf(S.athletes.find(x=>x.id===id)))?(S.athletes.find(x=>x.id===id).genderTs||0):Date.now(),occupation:gv('na_oc'),sport:gv('na_sp'),hrRest:gv('na_hr'),height:gv('na_h'),bodyFat:gv('na_bf'),muscleMass:gv('na_mm'),activity:gv('na_act'),geb:gv('na_geb'),kcalTarget:gv('na_kt'),goalWeight:gv('na_gw')};
   const w=parseFloat(gv('na_w'));
   if(id){Object.assign(S.athletes.find(x=>x.id===id),data);const bf=parseFloat(gv('na_bf')),prevBf=lastEvoOf(id,'grasa');if((!isNaN(w)&&w!==lastWeight(id))||(!isNaN(bf)&&bf!==prevBf)){const ev={id:uid(),athleteId:id,date:TODAY};if(!isNaN(w))ev.peso=w;if(!isNaN(bf))ev.grasa=bf;S.evo.push(ev)}closeModal();commit();toast('Perfil actualizado');return}
   if(!e){toast('El correo es obligatorio: será su usuario del portal');return}
@@ -1652,7 +1693,7 @@ function athleteHTML(){
   if(tab==='agenda') body=oldPlanCard(a)+agendaHTML(a);
   else if(tab==='plan') body=myPlanHTML(a);
   else if(tab==='cal') body=`<div class="card" style="overflow:hidden">${calHTML('athlete')}</div><div style="height:12px"></div>${dayListHTML(a,S.ui.selDay)}`;
-  else if(tab==='evo') body=tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+compHTML(a,'athlete')+evoHTML(a.id,'athlete');
+  else if(tab==='evo') body=myProfileHTML(a)+tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+compHTML(a,'athlete')+evoHTML(a.id,'athlete');
   else if(tab==='nut') body=athNutHTML(a);
   else body=`<div class="card">${chatHTML(a.id,'athlete')}</div>`;
   return `<div class="phone">
@@ -2133,6 +2174,7 @@ const HELP={
   racha:{t:'Tu racha',b:'Cuántos días de entrenamiento seguidos has cumplido con todo lo que te tocaba.'},
   actividad:{t:'Otra actividad',b:'Si hiciste algo fuera de tu plan (correr, bici, un partido), regístralo para que también cuente en tu carga de la semana.'},
   peso:{t:'Peso corporal',b:'Pésate en ayunas, a la misma hora y en la misma báscula para que tus datos se puedan comparar.'},
+  ciclo:{t:'Fase menstrual',b:'Es opcional. Si lo incluyes, con la fecha en que empezó tu última menstruación y cuántos días dura tu ciclo calculamos en qué fase estás. Tu energía y fuerza cambian según la fase, y tu coach lo usa para ajustar la intensidad. Solo lo ven tú y tu coach.'},
   comp:{t:'Tu composición',b:'Tu peso, cuánto de tu cuerpo es grasa y cuánta energía gastas al día. IMC compara tu peso con tu estatura. IMM muestra cuánto músculo tienes para tu estatura. GEB es lo que tu cuerpo gasta en reposo y GET es todo lo que gastas en un día normal, contando tu actividad.'},
   imm:{t:'IMM · índice de masa muscular',b:'Muestra cuánto músculo tienes en relación con tu estatura (kilos de músculo ÷ estatura²). Si no hay medición de masa muscular, se usa la masa libre de grasa. Subirlo con el tiempo significa que ganas músculo.'},
   geb:{t:'GEB · gasto energético basal',b:'Las calorías que tu cuerpo usa solo para mantenerse vivo en reposo (respirar, latir, pensar). Se toma la medición de tu coach o se estima con tu peso, estatura, edad y % de grasa.'},
@@ -2215,7 +2257,7 @@ document.addEventListener('scroll',e=>{const p=document.getElementById('popHelp'
 
 /* ---------- formulario de disposición ---------- */
 function readinessHTML(t){const r=t.readiness;if(!r)return'';return `<div class="readi"><span class="status ${r.score>=7?'ok':r.score>=5?'warn':'risk'}">${ic('gauge',12)} Disposición ${r.score}/10</span><span class="gtag">Sueño ${r.sleep}</span><span class="gtag">Alimentación ${r.food}</span><span class="gtag">Energía ${r.energy}</span>${r.hrNow?`<span class="gtag">${r.hrNow} lpm al iniciar</span>`:''}${r.menstrual?`<span class="status pink">${ic('drop',12,true)} Fase menstrual</span>`:''}</div>`}
-function openReadiness(tid){const t=taskById(tid);S.ui.rd=S.ui.rd&&S.ui.rd.tid===tid?S.ui.rd:{tid,sleep:t.readiness?.sleep||null,food:t.readiness?.food||null,energy:t.readiness?.energy||null,men:!!t.readiness?.menstrual,hr:t.readiness?.hrNow||''};renderReadiness()}
+function openReadiness(tid){const t=taskById(tid);S.ui.rd=S.ui.rd&&S.ui.rd.tid===tid?S.ui.rd:{tid,sleep:t.readiness?.sleep||null,food:t.readiness?.food||null,energy:t.readiness?.energy||null,men:t.readiness?!!t.readiness.menstrual:!!(cyclePhase(cycleOf(t.athleteId))||{}).menstrual,hr:t.readiness?.hrNow||''};renderReadiness()}
 function scale10(key){const v=S.ui.rd[key];return `<div class="scale10">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" class="${v===n?'on':''}" onclick="S.ui.rd.${key}=${n};renderReadiness()">${n}</button>`).join('')}</div>`}
 function rdHrText(a,hr){const k=karvonen(a);if(!hr)return k?`Tu pulso en reposo habitual es ${k.rest} lpm.`:'';if(!k)return '';const d=hr-k.rest;return d>=8?`Estás ${d} lpm arriba de tu reposo habitual (${k.rest}). Puede ser cansancio, estrés o poco sueño: cuéntaselo a tu coach.`:`Normal para ti (tu reposo habitual es ${k.rest} lpm). Hoy tu zona moderada (Z3) va de ${k.z[2].lo} a ${k.z[2].hi} lpm.`}
 function renderReadiness(){
@@ -2225,14 +2267,14 @@ function renderReadiness(){
     <div class="field"><label>¿Cómo dormiste hoy? ${qm('sueno')}</label>${scale10('sleep')}<div class="scale-ends"><span>1 · muy mal</span><span>10 · excelente</span></div></div>
     <div class="field"><label>¿Cómo comiste hoy? ${qm('comida')}</label>${scale10('food')}<div class="scale-ends"><span>1 · muy mal</span><span>10 · excelente</span></div></div>
     <div class="field"><label>Nivel de energía para entrenar ${qm('energia')}</label>${scale10('energy')}<div class="scale-ends"><span>1 · sin energía</span><span>10 · a tope</span></div></div>
-    ${a.gender==='Mujer'?`<div class="field"><div class="men ${rd.men?'on':''}" role="button" onclick="S.ui.rd.men=!S.ui.rd.men;renderReadiness()"><span class="ico">${ic('drop',17,rd.men)}</span><span style="flex:1"><b>Estoy en fase menstrual</b><br><span class="muted" style="font-size:12px">${rd.men?'Marcado: tu coach lo tomará en cuenta':'Tócalo si estás en tus días'}</span></span>${qm('menstrual')}</div></div>`:''}
+    ${genderOf(a)==='Mujer'?`<div class="field"><div class="men ${rd.men?'on':''}" role="button" onclick="S.ui.rd.men=!S.ui.rd.men;renderReadiness()"><span class="ico">${ic('drop',17,rd.men)}</span><span style="flex:1"><b>Estoy en fase menstrual</b><br><span class="muted" style="font-size:12px">${rd.men?'Marcado: tu coach lo tomará en cuenta':'Tócalo si estás en tus días'}</span></span>${qm('menstrual')}</div></div>`:''}
     <div class="field"><label>¿A cuántas pulsaciones por minuto estás ahora? ${qm('lpm')}</label><input type="number" id="rd_hr" min="30" max="220" placeholder="Ej. 68 (opcional)" value="${esc(rd.hr)}" oninput="S.ui.rd.hr=this.value;document.getElementById('rd_hrn').innerHTML=rdHrText(curA(),+this.value)"><small id="rd_hrn">${rdHrText(a,+rd.hr)}</small></div>
   </div>
   <div class="modal-f"><button class="btn ghost" onclick="renderAthTaskModal('${t.id}')">Volver</button><button class="btn primary" ${ok?'':'disabled'} onclick="saveReadiness()">${ic('play',14,true)} Empezar entrenamiento</button></div></div>`);
 }
 function saveReadiness(){
   const rd=S.ui.rd,t=taskById(rd.tid),a=S.athletes.find(x=>x.id===t.athleteId),score=Math.round((rd.sleep+rd.food+rd.energy)/3*10)/10;
-  t.readiness={sleep:rd.sleep,food:rd.food,energy:rd.energy,menstrual:a.gender==='Mujer'&&rd.men,hrNow:+rd.hr||null,score,ts:Date.now()};
+  t.readiness={sleep:rd.sleep,food:rd.food,energy:rd.energy,menstrual:genderOf(a)==='Mujer'&&rd.men,hrNow:+rd.hr||null,score,ts:Date.now()};
   S.ui.timer={taskId:t.id,start:Date.now()};S.ui.rd=null;
   pushActivity(t.athleteId,'ready',`inició «${t.title}» · disposición ${score}/10${t.readiness.menstrual?' · fase menstrual':''}${t.readiness.hrNow?` · ${t.readiness.hrNow} lpm`:''}`);
   save();renderApp();renderAthTaskModal(t.id);toast(score<5?'Gracias. Hoy escucha a tu cuerpo y avísale a tu coach si algo no se siente bien':'¡A entrenar! Cronómetro iniciado');
