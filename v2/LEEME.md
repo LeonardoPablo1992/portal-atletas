@@ -1,6 +1,6 @@
 # ProTrainerPlus v2
 
-Nueva versión del portal, publicada en paralelo en `https://atletas.headcoachleonardopablo.com/v2/`.
+Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas.headcoachleonardopablo.com/` (el `index.html` principal); `/v2/` redirige ahí y el portal anterior quedó en `/anterior/`.
 
 - Usa el mismo Supabase y el mismo login que el portal actual (`/`).
 - No modifica `index.html`, ni las tablas `plans`, `sessions`, `profiles`, `comments` o `evidencias`. Los planes actuales de cada atleta se siguen viendo en el portal de siempre; la v2 muestra un acceso directo a ellos.
