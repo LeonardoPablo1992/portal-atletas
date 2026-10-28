@@ -532,6 +532,10 @@ details.exv[open] summary .chev{transform:rotate(180deg)}
 .prow .skip{opacity:.45}
 .myplan-h{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
 .myplan-h .ti{width:40px;height:40px;border-radius:12px;background:var(--green-50);color:var(--green);display:grid;place-items:center;flex-shrink:0}
+
+.pill.hist{color:#6b7280;background:#f3f4f6;border-color:#e5e7eb}
+.chip.hist span{color:var(--muted)}
+.tcard.hist{opacity:.6}
 </style>
 </head>
 <body>
@@ -787,7 +791,7 @@ async function loadData(){
   const metaMap={};meta.forEach(r=>{metaMap[r.id]=r.doc||{}});
   let athletes=[],plansOld=[];
   if(IS_COACH){
-    const [pr,pl]=await Promise.all([SB.from('profiles').select('*'),SB.from('plans').select('athlete_email,athlete_name,title,data,active')]);
+    const [pr,pl]=await Promise.all([SB.from('profiles').select('*'),SB.from('plans').select('athlete_email,athlete_name,title,data,active,created_at')]);
     plansOld=pl.data||[];const names=new Map();
     (pr.data||[]).forEach(p=>{const e=String(p.email||'').toLowerCase();if(e&&e!==ME.email)names.set(e,p.full_name||'')});
     plansOld.filter(p=>p.active&&String(p.athlete_email||'').includes('@')).forEach(p=>{const e=p.athlete_email.toLowerCase();if(e!==ME.email&&!names.get(e))names.set(e,p.athlete_name||'')});
@@ -963,20 +967,37 @@ function openCoachPlan(aid){
   <div class="modal-b"><div class="muted" style="font-size:12px;margin-bottom:10px">${esc(p.desc||'')} · ${p.days.length} días · ${p.days.reduce((s,d)=>s+d.rows.length,0)} ejercicios</div>
   ${planMulti(p)?`<div class="field" style="max-width:230px"><label>Fase actual del atleta</label><select onchange="setPlanPhase('${aid}',+this.value)">${[0,1,2,3].map(i=>`<option value="${i}" ${(p.phase??0)===i?'selected':''}>Fase ${i+1}</option>`).join('')}</select></div>`:''}
   ${planViewHTML(p,'coach')}</div>
-  <div class="modal-f"><span class="muted" style="font-size:12px;flex:1">El atleta lo ve en su pestaña «Mi plan».</span><button class="btn ghost" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openPlanEditor(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('edit',14)} Editar plan</button><button class="btn primary" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openAssignPlan(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('cal',14)} Programar en calendario</button></div></div>`);
+  <div class="modal-f"><span class="muted" style="font-size:12px;flex:1">El atleta lo ve en su pestaña «Mi plan».</span><button class="btn soft" onclick="autoSchedule('${aid}')">${ic('cal',14)} Programar L–V / L–S (4 semanas)</button><button class="btn ghost" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openPlanEditor(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('edit',14)} Editar plan</button><button class="btn primary" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openAssignPlan(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('cal',14)} Programar en calendario</button></div></div>`);
 }
+const DOW_RULES=[[/quad|cuad/i,0],[/shoulder|hombro/i,1],[/back|espalda/i,2],[/chest|pecho/i,3],[/ham|glut|isquio/i,4],[/arm|brazo/i,5]];
+function planWeekMap(p){const m=p.days.map(d=>{for(const [re,w] of DOW_RULES)if(re.test(d.name))return w;return -1});const lim=p.days.length>=6?6:5;const free=[0,1,2,3,4,5].slice(0,lim).filter(x=>!m.includes(x));return m.map(v=>v<0?(free.length?free.shift():-1):v)}
+/* Programa el plan del atleta: una rutina por día (L–V con 5 rutinas, L–S con 6) durante 4 semanas desde 'start'.
+   Los días anteriores a hoy quedan como «Histórico» y no cuentan como faltas. */
+function scheduleAthletePlanAuto(aid,start,weeks=4){
+  const a=S.athletes.find(x=>x.id===aid);if(!a||!a.plan)return 0;const p=a.plan,tpl=ensureTpl(a),map=planWeekMap(p),multi=planMulti(p),end=addDays(start,weeks*7-1);let n=0;
+  for(let ds=start;ds<=end;ds=addDays(ds,1)){const wd=(parse(ds).getDay()+6)%7,di=map.indexOf(wd);if(di<0)continue;
+    if(S.tasks.some(t=>t.athleteId===aid&&t.date===ds&&t.planId===tpl.id))continue;
+    const wk=Math.floor(Math.round((parse(mondayOf(ds))-parse(mondayOf(start)))/864e5)/7),ph=multi?Math.min(3,wk):0,d=p.days[di];
+    S.tasks.push({id:uid(),athleteId:aid,date:ds,type:'entrenamiento',title:`${d.name}${multi?` · F${ph+1}`:''}`,data:{blocks:dayToBlocks(d,ph),attach:[]},status:'pending',progress:{sets:{},kg:{}},feedback:null,createdAt:Date.now(),planId:tpl.id,planName:p.name,phase:ph+1,week:wk+1,...(ds<TODAY?{hist:true}:{})});n++}
+  p.scheduled={start,end,days:p.days.map((d,i)=>[d.name,map[i]])};tpl.scheduled=p.scheduled;
+  pushNotif(aid,`Tu plan ya está en tu calendario: del ${longDate(start)} al ${longDate(end)}`);
+  return n;
+}
+function autoSchedule(aid){const a=S.athletes.find(x=>x.id===aid),op=OLDPLANS[aid],start=op&&op.created_at?op.created_at.slice(0,10):TODAY;
+  const n=scheduleAthletePlanAuto(aid,start);closeModal();S.ui.month=start.slice(0,7);commit();toast(`${n} sesiones programadas para ${a.name.split(' ')[0]}`)}
 function setPlanPhase(aid,ph){const a=S.athletes.find(x=>x.id===aid);a.plan.phase=ph;S.ui.pv={id:a.plan.id,day:S.ui.pv?S.ui.pv.day:0,phase:ph};const t=S.plans.find(x=>x.id===a.plan.tplId);if(t)t.phase=ph;commit();openCoachPlan(aid);toast(`${a.name.split(' ')[0]} ahora va en la fase ${ph+1}`)}
-function oldPlanCard(a){if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="../"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
+function oldPlanCard(a){if(a.plan&&a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="../"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
 
 const curA=()=>S.athletes.find(a=>a.id===S.ui.athleteId)||S.athletes[0];
 const tasksOn=(aid,ds)=>S.tasks.filter(t=>t.athleteId===aid&&t.date===ds);
 const taskById=id=>S.tasks.find(t=>t.id===id);
 function status(t){
   if(t.status==='done') return 'done';
+  if(t.hist) return 'hist';
   if(t.date<TODAY && ['entrenamiento','evolucion','formulario'].includes(t.type)) return 'missed';
   return 'pending';
 }
-const STATUS_LBL={done:'Completado',pending:'Pendiente',missed:'No realizado'};
+const STATUS_LBL={done:'Completado',pending:'Pendiente',missed:'No realizado',hist:'Histórico'};
 function pushActivity(aid,kind,text){S.activity.unshift({id:uid(),athleteId:aid,kind,text,ts:Date.now(),read:false})}
 function pushNotif(aid,text){S.notifs.unshift({id:uid(),athleteId:aid,text,ts:Date.now(),read:false})}
 
@@ -1061,7 +1082,7 @@ function coachHTML(compact){
       <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
-        ${a.plan?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
+        ${a.plan&&!a.plan.scheduled?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
         <button class="btn ghost" onclick="openNewAthlete('${a.id}')">${ic('edit',15)} Perfil</button>
         <button class="btn yt" onclick="openAddTask(TODAY,'video')">${ic('video',16)} Video</button>
         <button class="btn primary" onclick="openAddTask(TODAY,'entrenamiento')">${ic('plus',16)} Tarea</button>
@@ -1152,7 +1173,7 @@ function openNewAthlete(id){
 }
 function naZones(){const el=document.getElementById('na_z');if(!el)return;const k=karvonen({age:gv('na_age'),hrRest:gv('na_hr')});el.innerHTML=k?`<div class="note" style="margin-bottom:12px"><b>Zonas de FC (Karvonen)</b> · FC máx ${k.max} lpm · FC de reserva ${k.res} lpm<br>${k.z.map((z,i)=>`Z${i+1}: ${z.lo}–${z.hi}`).join(' · ')} lpm</div>`:`<div class="muted" style="font-size:12px;margin:-4px 0 12px">Con la edad y la FC en reposo se calculan sus zonas de entrenamiento (Karvonen).</div>`}
 function lastWeight(aid){const e=S.evo.filter(x=>x.athleteId===aid&&x.peso!=null).sort((x,y)=>y.date.localeCompare(x.date))[0];return e?e.peso:null}
-function profileChips(a){const w=lastWeight(a.id);const it=[a.gender,a.age&&`${a.age} años`,w&&`${w} kg`,a.occupation,a.sport,a.hrRest&&`FC reposo ${a.hrRest} lpm`,OLDPLANS[a.id]&&`Plan actual: ${OLDPLANS[a.id].title||'activo'}`].filter(Boolean);return it.length?`<div class="prof">${it.map(x=>`<span class="gtag">${esc(x)}</span>`).join('')}</div>`:''}
+function profileChips(a){const w=lastWeight(a.id);const it=[a.gender,a.age&&`${a.age} años`,w&&`${w} kg`,a.occupation,a.sport,a.hrRest&&`FC reposo ${a.hrRest} lpm`,!(a.plan&&a.plan.scheduled)&&OLDPLANS[a.id]&&`Plan actual: ${OLDPLANS[a.id].title||'activo'}`].filter(Boolean);return it.length?`<div class="prof">${it.map(x=>`<span class="gtag">${esc(x)}</span>`).join('')}</div>`:''}
 function saveAthlete(id){
   const n=gv('na_n');if(!n){toast('Escribe un nombre');return}
   const e=gv('na_e');if(e&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('Revisa el correo');return}
@@ -1491,7 +1512,7 @@ function moveTask(id,dup){
    VISTA ATLETA
 ========================================================= */
 function athleteHTML(){
-  const a=curA(), tab=S.ui.athTab;
+  const a=curA();if(S.ui.athTab==='plan'&&(!a.plan||a.plan.scheduled))S.ui.athTab='agenda';const tab=S.ui.athTab;
   const todayT=tasksOn(a.id,TODAY), dn=todayT.filter(t=>t.status==='done').length, p=todayT.length?dn/todayT.length:0;
   const unread=S.notifs.filter(n=>n.athleteId===a.id&&!n.read).length;
   const unreadChat=S.messages.filter(m=>m.athleteId===a.id&&m.from==='coach'&&!m.seen).length;
@@ -1516,7 +1537,7 @@ function athleteHTML(){
   </div>
   <div class="ph-tabs">
     <button class="${tab==='agenda'?'on':''}" onclick="S.ui.athTab='agenda';commit()">${ic('dumbbell',17)}Hoy</button>
-    <button class="${tab==='plan'?'on':''}" onclick="S.ui.athTab='plan';commit()">${ic('layers',17)}Mi plan</button>
+    ${a.plan&&!a.plan.scheduled?`<button class="${tab==='plan'?'on':''}" onclick="S.ui.athTab='plan';commit()">${ic('layers',17)}Mi plan</button>`:''}
     <button class="${tab==='cal'?'on':''}" onclick="S.ui.athTab='cal';commit()">${ic('cal',17)}Calendario</button>
     <button class="${tab==='evo'?'on':''}" onclick="S.ui.athTab='evo';commit()">${ic('trend',17)}Progreso</button>
     <button class="${tab==='chat'?'on':''}" onclick="openAthChat()">${ic('msg',17)}Coach${unreadChat?`<span class="n">${unreadChat}</span>`:''}</button>
@@ -1552,7 +1573,7 @@ function dayListHTML(a,ds){
     h+=`<div class="tcard ${st}" style="--c:${T.color}" onclick="openAthTask('${t.id}')">
       ${vid?vThumb(vid,'thumb'):`<div class="ti">${ic(T.icon,20)}</div>`}
       <div class="tb"><div class="tt">${T.label}</div><div class="tn">${esc(t.title)}</div><div class="tm">${esc(meta)}</div>${t.type==='entrenamiento'&&t.status!=='done'&&pct(t)>0?`<div class="mini-prog"><i style="width:${pct(t)}%"></i></div>`:''}</div>
-      ${st==='done'?`<span style="color:var(--green)">${ic('checkc',20)}</span>`:st==='missed'?`<span class="pill missed">Vencido</span>`:`<span style="color:var(--muted)">›</span>`}
+      ${st==='done'?`<span style="color:var(--green)">${ic('checkc',20)}</span>`:st==='missed'?`<span class="pill missed">Vencido</span>`:st==='hist'?`<span class="pill hist">Histórico</span>`:`<span style="color:var(--muted)">›</span>`}
     </div>`;
   });
   return h;
@@ -1988,7 +2009,7 @@ function trafficDay(ctx,ds){
   if(!st.ss.some(s=>s.date<=ds&&s.date>=addDays(ds,-27))) return {color:'none',kind:null,label:'Sin datos',pts:0,factors:[]};
   const r=acwrAt(st.daily,ds);
   if(r!=null){const p=(r>1.5||r<0.6)?2:(r>1.3||r<0.8)?1:0;F.push({k:'acwr',side:r<0.8?'low':r>1.3?'high':null,pts:p,label:'Equilibrio de carga (ACWR)',val:r.toFixed(2),txt:p===0?'Entre 0.8 y 1.3: carga estable':r<0.8?'La carga de la semana está por debajo de su promedio del mes':'La carga subió más rápido de lo recomendable'})}
-  const pl=plan.filter(t=>inW(t.date)&&(t.date<ds||t.status==='done'));
+  const pl=plan.filter(t=>!t.hist&&inW(t.date)&&(t.date<ds||t.status==='done'));
   if(pl.length){const dn=pl.filter(t=>t.status==='done').length,c=dn/pl.length,p=c<0.5?2:c<0.8?1:0;F.push({k:'cump',side:p?'low':null,pts:p,label:'Cumplimiento del plan',val:`${dn}/${pl.length}`,txt:p===0?'Cumplió lo programado':'Faltaron sesiones programadas'})}
   const rs=st.ss.filter(s=>s.ready!=null&&inW(s.date));
   if(rs.length){const avg=rs.reduce((x,s)=>x+s.ready,0)/rs.length,bs=st.ss.filter(s=>s.ready!=null&&inW(s.date,addDays(ds,-27))),base=bs.reduce((x,s)=>x+s.ready,0)/bs.length,drop=base-avg;let p=avg<5?2:avg<6.5?1:0;if(drop>=1.5)p=Math.min(2,p+1);F.push({k:'disp',side:p?'high':null,pts:p,label:'Disposición (sueño, comida, energía)',val:avg.toFixed(1),txt:p===0?'Llega descansado(a) y con energía':drop>=1.5?`Bajó ${drop.toFixed(1)} puntos contra su promedio del mes`:'Sueño, alimentación o energía por debajo de lo ideal'})}
