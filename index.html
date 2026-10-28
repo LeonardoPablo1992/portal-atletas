@@ -804,6 +804,16 @@ async function loadData(){
   if(!S.athletes.some(a=>a.id===S.ui.athleteId))S.ui.athleteId=S.athletes[0]?S.athletes[0].id:null;
   snapshot();
   if(IS_COACH)seedCoachData(plansOld);
+  purgeSeedVideos();
+}
+/* Quita los videos de ejemplo que se precargaron al inicio; la biblioteca solo guarda lo que agrega el coach */
+const PURGE_V=['4ksQt-cEfng','QLbMsabhBqY','rpkWBC1gCcE','XFKZ6Yw8XbE','Y29xKcze8Ik','zpbm-xRHB6k'];
+function purgeSeedVideos(){
+  const bad=u=>u&&PURGE_V.some(id=>String(u).includes(id));let ch=false;
+  const fix=rows=>(rows||[]).forEach(r=>{if(r&&bad(r.video)){r.video='';ch=true}});
+  S.tasks.forEach(t=>{const d=t.data||{};(d.blocks||[]).forEach(b=>fix(b.exercises));(d.attach||[]).forEach(x=>{if(x.type==='video'&&bad(x.value)){x.value='';ch=true}})});
+  if(IS_COACH){S.library.forEach(x=>{if(bad(x.video)){x.video='';ch=true}});S.plans.forEach(p=>(p.days||[]).forEach(d=>fix(d.rows)));S.athletes.forEach(a=>a.plan&&(a.plan.days||[]).forEach(d=>fix(d.rows)))}
+  if(ch)save();
 }
 /* Biblioteca y plantillas: se arman con los planes reales (3 planes publicados + planes de Excel del portal) */
 function seedCoachData(plansOld){
