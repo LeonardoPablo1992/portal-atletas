@@ -1567,7 +1567,7 @@ function renderLoginV2(msg){
     <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="#" onclick="event.preventDefault();renderForgot()" style="color:var(--green-d)">Recupérala aquí</a> · <a href="aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div>
     <div class="card" style="padding:18px 20px;margin-top:12px"><b style="font-size:15px">¿Aún no tienes cuenta? Créala aquí</b><p class="muted" style="margin:2px 0 12px;font-size:13px">Elige cómo vas a usar ProTrainerPlus</p>
       <div class="role-pick"><button type="button" class="role" onclick="window.__suRole='athlete';renderSignup()"><span class="re">🏃</span><b>Soy atleta</b><small>Quiero un coach y mi plan de entrenamiento</small></button><button type="button" class="role" onclick="window.__suRole='coach';renderSignup()"><span class="re">🏋️</span><b>Soy coach</b><small>Quiero gestionar a mis clientes · 14 días gratis</small></button></div></div>
-    ${ALT_HOST?'':`<p class="muted" style="font-size:12px;text-align:center;margin:12px 0 0">📶 ¿No carga bien con datos móviles? <a href="${ALT_URL}" style="color:var(--green-d);font-weight:700">Abrir versión alterna</a></p>`}</div>`;
+    </div>`;
 }
 async function doLogin(){const b=document.getElementById('lg_b');b.disabled=true;b.textContent='Entrando…';
   const {data,error}=await SB.auth.signInWithPassword({email:gv('lg_e').toLowerCase(),password:document.getElementById('lg_p').value});
