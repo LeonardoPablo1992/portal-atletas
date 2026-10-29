@@ -1,6 +1,6 @@
 # ProTrainerPlus v2
 
-Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas.headcoachleonardopablo.com/` (el `index.html` principal); `/v2/` redirige ahí y el portal anterior quedó en `/anterior/`.
+Nueva versión del portal. Vive en la raíz `https://atletas.headcoachleonardopablo.com/` (el `index.html` principal). El portal anterior se retiró el 29/10/2026: `/anterior/` y `/v2/` solo redirigen a la raíz conservando `#hash` y `?query` (enlaces de correo). Los datos del portal anterior (tablas `plans`, `sessions`, etc.) siguen en Supabase y la app nueva los sigue leyendo.
 
 - Usa el mismo Supabase y el mismo login que el portal actual (`/`).
 - No modifica `index.html`, ni las tablas `plans`, `sessions`, `profiles`, `comments` o `evidencias`. Los planes actuales de cada atleta se siguen viendo en el portal de siempre; la v2 muestra un acceso directo a ellos.
@@ -73,3 +73,8 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - **Cliente sin coach** → ve el catálogo (`pt_coach_profiles`) y envía una solicitud; el coach la acepta o rechaza en «Solicitudes». Al darlo de alta el coach: si la cuenta es nueva queda vinculada; si ya existía, se le envía una invitación (evita que un coach tome clientes de otro).
 - **Mi perfil de coach**: ficha pública del catálogo (foto, título, especialidades, ciudad, modalidad, precios, bio, sitio, Instagram, visible u oculto).
 - Los clientes actuales quedan asignados a coach@headcoachleonardopablo.com. Las tablas del portal anterior no cambian y siguen siendo solo del coach principal.
+
+## Cuenta y planes (29/10/2026)
+
+- Recuperar contraseña, crear nueva contraseña (enlace de recuperación) y enlaces vencidos se resuelven en la app nueva.
+- Ficha del cliente → «Plan de entrenamiento»: ver/editar/programar su plan, crear uno a mano, copiar una plantilla o cargar Excel. Al programar se pueden reemplazar las sesiones pendientes del plan anterior.

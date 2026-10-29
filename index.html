@@ -818,6 +818,12 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 .trial-bar{background:#ecfdf5;color:#065f46;border-bottom:1px solid #a7f3d0;text-align:center;font-size:12.5px;padding:7px 12px}
 .trial-bar.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
 #trialBar:empty{display:none}
+.cp-cur{border:1px solid var(--green-200);background:var(--green-50);border-radius:14px;padding:12px;margin-bottom:12px}
+.cp-t{display:flex;gap:10px;align-items:center}.cp-ic{font-size:24px}
+.cp-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.cp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.cp-opt{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.cp-oh{font-size:14px}.cp-opt p{margin:0;font-size:12.5px;color:var(--ink-2);flex:1}
 </style>
 </head>
 <body>
@@ -826,7 +832,6 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
   <div class="seg" id="modeSeg"></div>
   <span class="sync" id="syncState"></span>
   <span class="who" id="whoAmI"></span>
-  <a class="reset" id="oldPortal" href="/anterior/" title="Portal de siempre">Portal anterior</a>
   <button class="reset" id="btnLogout" onclick="logout()" style="display:none">Salir</button>
 </header>
 <div id="app"></div>
@@ -1453,14 +1458,52 @@ function myCoachHTML(){
   return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="font-weight:700;margin-bottom:8px">🏋️ Tu coach</div>${coachCardHTML(c,'mine')}</div>`;
 }
 
+
+/* ---- cuenta: recuperar contraseña, nueva contraseña y enlaces vencidos (antes en el portal anterior) ---- */
+function authCard(inner){document.getElementById('app').innerHTML=`<div style="max-width:420px;margin:50px auto;padding:0 16px"><div class="card" style="padding:24px">${inner}</div></div>`}
+function renderForgot(msg,ok){
+  authCard(`<h2 style="margin:0 0 4px">Recuperar contraseña</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+    ${msg?`<div class="info" style="${ok?'':'background:#fee2e2;color:#991b1b'}">${msg}</div>`:''}
+    ${ok?'':`<form onsubmit="event.preventDefault();doForgot()"><div class="field"><label>Correo</label><input id="fg_e" type="email" required autocomplete="email" inputmode="email"></div><button class="btn primary full" id="fg_b">Enviar enlace</button></form>`}
+    <p style="font-size:12px;margin:14px 0 0" class="muted"><a href="#" onclick="event.preventDefault();renderLoginV2()" style="color:var(--green-d)">Volver a entrar</a></p>`);
+}
+async function doForgot(){
+  const e=gv('fg_e').trim().toLowerCase(),b=document.getElementById('fg_b');if(!e)return;b.disabled=true;b.textContent='Enviando…';
+  const {error}=await SB.auth.resetPasswordForEmail(e,{redirectTo:CONFIG.V2_URL});
+  if(error&&!/rate|seconds/i.test(error.message)){renderForgot(esc(error.message));return}
+  renderForgot(`📩 Si <b>${esc(e)}</b> tiene cuenta, te llegará un correo con el enlace. Revisa también tu carpeta de spam. El enlace vence en poco tiempo.`,true);
+}
+function renderSetPassword(msg){
+  authCard(`<h2 style="margin:0 0 4px">Crea tu nueva contraseña</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Mínimo 8 caracteres.</p>
+    ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
+    <form onsubmit="event.preventDefault();doSetPassword()"><div class="field"><label>Nueva contraseña</label><input id="np_1" type="password" required minlength="8" autocomplete="new-password"></div><div class="field"><label>Repite la contraseña</label><input id="np_2" type="password" required minlength="8" autocomplete="new-password"></div><button class="btn primary full" id="np_b">Guardar y entrar</button></form>`);
+}
+async function doSetPassword(){
+  const a=document.getElementById('np_1').value,b2=document.getElementById('np_2').value;
+  if(a.length<8)return renderSetPassword('La contraseña debe tener al menos 8 caracteres');if(a!==b2)return renderSetPassword('Las contraseñas no coinciden');
+  const b=document.getElementById('np_b');b.disabled=true;b.textContent='Guardando…';
+  const {data,error}=await SB.auth.updateUser({password:a});if(error)return renderSetPassword(error.message);
+  toast('Contraseña actualizada');await start(data.user);
+}
+function renderLinkError(code,msg){
+  const exp=/expired|otp_expired|invalid/i.test(code+' '+msg);
+  authCard(`<div style="text-align:center"><div style="font-size:42px">⏰</div><h2 style="margin:6px 0">${exp?'Este enlace ya venció':'No se pudo abrir el enlace'}</h2>
+    <p class="muted">${exp?'Los enlaces de confirmación y de recuperación duran poco tiempo y solo se pueden usar una vez. Pide uno nuevo o entra con tu contraseña.':esc(msg)}</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px"><button class="btn ghost" onclick="renderForgot()">Recuperar contraseña</button><button class="btn primary" onclick="renderLoginV2()">Entrar</button></div></div>`);
+}
+
 window.addEventListener('hashchange',()=>{if(/demo=/.test(location.hash))location.reload()});
 async function boot(){
   const dm=await demoCheck();if(dm==='bad')return;if(dm)demoSetup();
-  if(/type=recovery|error_description/.test(location.hash)){location.replace('/anterior/'+location.hash);return}
+  const hp=new URLSearchParams(location.hash.replace(/^#/,'')),isRecovery=hp.get('type')==='recovery',linkErr=hp.get('error_description')||hp.get('error')||'',linkCode=hp.get('error_code')||'';
+  if(linkErr)history.replaceState(null,'',location.pathname+location.search);
   const wantSignup=/crear-cuenta/.test(location.hash);if(wantSignup)history.replaceState(null,'',location.pathname+location.search);
   if(!window.supabase){document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">No se pudo cargar la conexión. Revisa tu internet y recarga la página.</div>';return}
   SB=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{global:{fetch:sbFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
-  try{const {data}=await SB.auth.getSession();if(!data.session)return wantSignup?renderSignup():renderLoginV2();await start(data.session.user)}
+  try{const {data}=await SB.auth.getSession();
+    if(linkErr&&!data.session)return renderLinkError(linkCode,linkErr);
+    if(isRecovery&&data.session){history.replaceState(null,'',location.pathname+location.search);return renderSetPassword()}
+    if(!data.session)return wantSignup?renderSignup():renderLoginV2();await start(data.session.user)}
   catch(e){renderLoginV2(e.message)}
 }
 async function start(u){
@@ -1468,17 +1511,16 @@ async function start(u){
   document.getElementById('whoAmI').textContent=ME.email;document.getElementById('btnLogout').style.display='';
   document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">Cargando tu información…</div>';
   try{await loadRole(u);
-    const op=document.getElementById('oldPortal');if(op){op.textContent='Portal anterior';op.style.display=IS_COACH&&IS_ADMIN?'':'none'}
     await loadData();await loadCoachRequests();if(!IS_COACH)await loadCatalog();if(DEMO.on&&IS_COACH&&!DEMO.db.seeded)seedDemo();renderApp();setSync('ok')}
   catch(e){console.error(e);if(String(e.message)==='COACH_PENDING'){document.getElementById('app').innerHTML=`<div class="card" style="max-width:500px;margin:60px auto;padding:26px;text-align:center"><div style="font-size:44px">🏋️</div><h2>Estamos activando tu cuenta de coach</h2><p class="muted">Tu registro quedó guardado. En cuanto esté lista podrás entrar a tu panel y empezar tus 14 días gratis. Si tienes dudas escríbenos a coach@headcoachleonardopablo.com.</p></div>`;return}document.getElementById('app').innerHTML=`<div class="card" style="max-width:540px;margin:60px auto;padding:22px"><h3 style="margin-top:0">No se pudo cargar</h3><p class="muted">${esc(e.message||String(e))}</p><p class="muted" style="font-size:12px">Si el mensaje menciona una tabla "pt_", falta correr el script de instalación (supabase-v2.sql) en Supabase.</p><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`}
 }
 function renderLoginV2(msg){
   if(DEMO.on){document.getElementById('app').innerHTML=demoLoginHTML(msg);return}
   document.getElementById('app').innerHTML=`<div style="max-width:400px;margin:60px auto;padding:0 16px"><div class="card" style="padding:24px">
-    <h2 style="margin:0 0 4px">Entrar</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Usa el mismo correo y contraseña de tu portal de atletas.</p>
+    <h2 style="margin:0 0 4px">Entrar</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Entra con tu correo y contraseña.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="email" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="/anterior/" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="#" onclick="event.preventDefault();renderSignup()" style="color:var(--green-d);font-weight:700">Crear cuenta</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="#" onclick="event.preventDefault();renderForgot()" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="#" onclick="event.preventDefault();renderSignup()" style="color:var(--green-d);font-weight:700">Crear cuenta</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
 }
 async function doLogin(){const b=document.getElementById('lg_b');b.disabled=true;b.textContent='Entrando…';
   const {data,error}=await SB.auth.signInWithPassword({email:gv('lg_e').toLowerCase(),password:document.getElementById('lg_p').value});
@@ -1563,7 +1605,7 @@ function scheduleAthletePlanAuto(aid,start,weeks=4){
 function autoSchedule(aid){const a=S.athletes.find(x=>x.id===aid),op=OLDPLANS[aid],start=op&&op.created_at?fmt(new Date(op.created_at)):TODAY;
   const n=scheduleAthletePlanAuto(aid,start);closeModal();S.ui.month=start.slice(0,7);commit();toast(`${n} sesiones programadas para ${a.name.split(' ')[0]}`)}
 function setPlanPhase(aid,ph){const a=S.athletes.find(x=>x.id===aid);a.plan.phase=ph;S.ui.pv={id:a.plan.id,day:S.ui.pv?S.ui.pv.day:0,phase:ph};const t=S.plans.find(x=>x.id===a.plan.tplId);if(t)t.phase=ph;commit();openCoachPlan(aid);toast(`${a.name.split(' ')[0]} ahora va en la fase ${ph+1}`)}
-function oldPlanCard(a){if(!a.plan||a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="/anterior/"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
+function oldPlanCard(a){if(!a.plan||a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="/"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
 
 const curA=()=>S.athletes.find(a=>a.id===S.ui.athleteId)||S.athletes[0];
 const tasksOn=(aid,ds)=>S.tasks.filter(t=>t.athleteId===aid&&t.date===ds);
@@ -1717,7 +1759,7 @@ function coachHTML(compact){
       <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}<div class="priv-st ${privacyRec(a.id)?'ok':''}">🔒 Aviso de privacidad: ${privacyRec(a.id)?`aceptado el ${dmy(privacyRec(a.id).date)}${privacyRec(a.id).secondary?' · con secundarias':''}`:'pendiente (se le pedirá al entrar)'}</div>${!genderOf(a)?`<button type="button" class="gq" onclick="openNewAthlete('${a.id}')">${dropSVG(13)} Indica su género para activar la fase menstrual</button>`:''}${genderOf(a)==='Mujer'?`<div class="per-coach">${periodDayHTML(a,'coach')}</div>`:''}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
-        ${a.plan&&!a.plan.scheduled?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
+        <button class="btn soft" onclick="openClientPlan('${a.id}')">${ic('layers',15)} Plan de entrenamiento</button>
         <button class="btn soft" onclick="openNutrition('${a.id}')">${ic('food',15)} Nutrición</button>
         <button class="btn ghost" onclick="openNewAthlete('${a.id}')">${ic('edit',15)} Perfil</button>
         <label class="btn soft upl" title="Excel con el formato de la plantilla">${ic('file',15)} Cargar desde archivo<input type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="loadClientFile('${a.id}',this.files[0]);this.value=''"></label>
@@ -1975,7 +2017,7 @@ function delSetupModal(role){
 }
 function delDoneScreen(){
   document.getElementById('whoAmI').textContent='';const lo=document.getElementById('btnLogout');if(lo)lo.style.display='none';
-  const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="/anterior/#crear-cuenta">✨ Crear un perfil nuevo</a>`;
+  const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="/#crear-cuenta" onclick="setTimeout(()=>location.reload(),50)">✨ Crear un perfil nuevo</a>`;
   document.getElementById('app').innerHTML=`<div class="del-done"><div class="del-big">👋</div><h2>Tu cuenta fue eliminada</h2>
     <p>Borramos para siempre tu perfil, tu historial, tus fotos y tus archivos. 🧹✨</p>
     <p class="muted">Gracias por entrenar con nosotros. Si algún día quieres volver, puedes crear un perfil nuevo con tu correo y empezar en blanco. 💪</p>
@@ -3165,9 +3207,35 @@ function savePlan(assign){
   if(assign)openAssignPlan(p.id);
 }
 const nextMonday=()=>{const m=mondayOf(TODAY);return m===TODAY?TODAY:addDays(m,7)};
+
+/* ---- plan de entrenamiento manual desde la ficha del cliente ---- */
+function openClientPlan(aid){
+  const a=S.athletes.find(x=>x.id===aid);if(!a)return;S.ui.athleteId=aid;const fn=esc(a.name.split(' ')[0]),p=a.plan,tpls=S.plans.filter(x=>!x.athleteId);
+  const pend=S.tasks.filter(t=>t.athleteId===aid&&t.type==='entrenamiento'&&t.status!=='done'&&!t.hist&&t.date>=TODAY).length;
+  openModal(`<div class="modal"><div class="modal-h"><h3>${ic('layers',18)} Plan de entrenamiento · ${fn}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
+    <div class="cp-cur">${p?`<div class="cp-t"><span class="cp-ic">📋</span><div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="muted" style="font-size:12px">${p.days.length} días · ${p.days.reduce((s,d)=>s+d.rows.length,0)} ejercicios${p.scheduled?` · en su calendario del ${dmy(p.scheduled.start)} al ${dmy(p.scheduled.end)}`:''} · ${pend} sesiones pendientes</div></div></div>
+      <div class="cp-acts"><button class="btn ghost sm" onclick="openCoachPlan('${aid}')">${ic('layers',13)} Ver</button><button class="btn ghost sm" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openPlanEditor(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('edit',13)} Editar</button><button class="btn soft sm" onclick="ensureTpl(S.athletes.find(x=>x.id==='${aid}'));openAssignPlan(S.athletes.find(x=>x.id==='${aid}').plan.tplId)">${ic('cal',13)} Programar fechas</button></div>`
+      :`<div class="cp-t"><span class="cp-ic">🗒️</span><div><b>${fn} aún no tiene plan</b><div class="muted" style="font-size:12px">Elige cómo quieres asignárselo.</div></div></div>`}</div>
+    <div class="cp-grid">
+      <div class="cp-opt"><div class="cp-oh">✍️ <b>Crear plan nuevo</b></div><p>Arma el plan a mano para ${fn}: días, ejercicios, 4 fases, tipos de serie y cardio. Al guardar eliges las fechas.</p><button class="btn primary sm" onclick="newClientPlan('${aid}')">${ic('plus',13)} Crear plan</button></div>
+      <div class="cp-opt"><div class="cp-oh">📚 <b>Usar una plantilla</b></div><p>Copia una de tus plantillas como plan personal de ${fn}; puedes ajustarla antes de asignarla.</p>
+        ${tpls.length?`<select class="inp" id="cp_tpl">${tpls.map(t=>`<option value="${t.id}">${esc(t.name)} · ${t.days.length} días</option>`).join('')}</select><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn ghost sm" onclick="tplToClient('${aid}',gv('cp_tpl'),true)">${ic('edit',13)} Ajustar</button><button class="btn primary sm" onclick="tplToClient('${aid}',gv('cp_tpl'),false)">${ic('cal',13)} Asignar</button></div>`:'<div class="muted" style="font-size:12px">Aún no tienes plantillas.</div>'}</div>
+      <div class="cp-opt"><div class="cp-oh">📄 <b>Desde Excel</b></div><p>Llena la plantilla de Excel y cárgala: se asigna a ${fn} y se programa en su calendario.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn ghost sm" href="/plantilla-entrenamiento.xlsx" download>${ic('file',13)} Plantilla</a><label class="btn primary sm upl">${ic('file',13)} Cargar archivo<input type="file" accept=".xlsx,.xls" onchange="closeModal();loadClientFile('${aid}',this.files[0]);this.value=''"></label></div></div>
+    </div>
+    ${pend&&p?`<div class="muted" style="font-size:12px;margin-top:10px">Al asignar un plan nuevo podrás reemplazar las ${pend} sesiones pendientes de su plan actual (las completadas se conservan).</div>`:''}
+  </div></div>`);
+}
+function newClientPlan(aid){const a=S.athletes.find(x=>x.id===aid);closeModal();openPlanEditor();S.ui.pd.athleteId=aid;S.ui.pd.name=`Plan de ${a.name.split(' ')[0]}`;S.ui.pd.desc=a.goal||'';renderPlanEditor()}
+function tplToClient(aid,tid,edit){
+  const a=S.athletes.find(x=>x.id===aid),t=S.plans.find(x=>x.id===tid);if(!a||!t)return;
+  const cp={...JSON.parse(JSON.stringify(t)),id:uid(),athleteId:aid,src:'',name:`Plan de ${a.name.split(' ')[0]}`,desc:t.desc||t.name,phase:0};delete cp.scheduled;
+  S.plans.push(cp);a.plan={...JSON.parse(JSON.stringify(cp)),tplId:cp.id};save();closeModal();
+  if(edit)openPlanEditor(cp.id);else openAssignPlan(cp.id);
+}
+
 function openAssignPlan(pid,start){
   const p=S.plans.find(x=>x.id===pid);if(!p)return;
-  S.ui.ap={pid,start:start&&start>=TODAY?start:nextMonday(),wpp:p.wpp||2,map:p.days.map((_,i)=>i<6?i:-1),aid:S.ui.athleteId};
+  S.ui.ap={pid,start:start&&start>=TODAY?start:(p.athleteId?TODAY:nextMonday()),wpp:p.wpp||2,map:p.athleteId?planWeekMap(p):p.days.map((_,i)=>i<6?i:-1),aid:p.athleteId||S.ui.athleteId,replace:true};
   renderAssignPlan();
 }
 function planSchedule(p,ap){
@@ -3185,6 +3253,7 @@ function renderAssignPlan(){
     <div class="field"><label>Semanas por fase</label><select id="ap_w" onchange="apSync()">${[1,2,3,4].map(n=>`<option value="${n}" ${ap.wpp==n?'selected':''}>${n}</option>`).join('')}</select></div></div>
     <div class="field"><label>¿Qué día de la semana va cada rutina?</label>
     ${p.days.map((d,i)=>`<div class="row" style="align-items:center;margin-bottom:6px"><span style="flex:1.4;font-weight:600">${esc(d.name)} <span class="muted" style="font-weight:400">· ${d.rows.length} ejercicios</span></span><select class="inp ap_m" data-i="${i}" onchange="apSync()" style="flex:1"><option value="-1">No asignar</option>${DIAS.map((x,k)=>`<option value="${k}" ${ap.map[i]===k?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')}</div>
+    ${(()=>{const n=S.tasks.filter(t=>t.athleteId===ap.aid&&t.type==='entrenamiento'&&t.planId&&t.planId!==p.id&&t.status!=='done'&&!t.hist&&t.date>=ap.start).length;return n?`<label class="chk" style="margin:4px 0 10px"><input type="checkbox" ${ap.replace?'checked':''} onchange="S.ui.ap.replace=this.checked"> Reemplazar las <b>${n}</b> sesiones pendientes de su plan anterior desde esa fecha</label>`:''})()}
     <div class="note">${dates.length?`Se crearán <b>${dates.length} entrenamientos</b> del ${dmy(dates[0].date)} al ${dmy(dates[dates.length-1].date)}.<br>${ph.map((x,f)=>x.length?`Fase ${f+1}: ${dmy(x[0].date).slice(0,5)} – ${dmy(x[x.length-1].date).slice(0,5)}`:'').filter(Boolean).join(' · ')}`:'Elige al menos un día de la semana.'}</div>
   </div>
   <div class="modal-f"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" ${dates.length?'':'disabled'} onclick="assignPlan()">${ic('check',15)} Asignar ${dates.length} entrenamientos</button></div></div>`);
@@ -3198,8 +3267,12 @@ function dayToBlocks(d,phase){
 function assignPlan(){
   const ap=S.ui.ap,p=S.plans.find(x=>x.id===ap.pid),aid=ap.aid,dates=planSchedule(p,ap);
   if(!dates.length){toast('Elige al menos un día');return}
-  dates.forEach(x=>{const d=p.days[x.day];S.tasks.push({id:uid(),athleteId:aid,date:x.date,type:'entrenamiento',title:`${d.name} · F${x.phase+1}`,data:{blocks:dayToBlocks(d,x.phase),attach:[]},status:'pending',progress:{sets:{},kg:{}},feedback:null,createdAt:Date.now(),planId:p.id,planName:p.name,phase:x.phase+1,week:x.week+1,day:x.day})});
-  pushNotif(aid,`Tu coach te asignó el plan «${p.name}» desde el ${longDate(dates[0].date)}`);
+  if(ap.replace)S.tasks=S.tasks.filter(t=>!(t.athleteId===aid&&t.type==='entrenamiento'&&t.planId&&t.planId!==p.id&&t.status!=='done'&&!t.hist&&t.date>=ap.start));
+  {const ath=S.athletes.find(x=>x.id===aid);if(ath){let own=p;if(p.athleteId!==aid){own={...JSON.parse(JSON.stringify(p)),id:uid(),athleteId:aid,src:'',name:`Plan de ${ath.name.split(' ')[0]}`,desc:p.desc||p.name};delete own.scheduled;S.plans.push(own)}
+    const map=ap.map;own.scheduled={start:dates[0].date,end:dates[dates.length-1].date,days:own.days.map((d,i)=>[d.name,map[i]])};ath.plan={...JSON.parse(JSON.stringify(own)),tplId:own.id};if(own!==p){ap.pid=own.id}}}
+  const pp=S.plans.find(x=>x.id===ap.pid)||p;
+  dates.forEach(x=>{const d=pp.days[x.day];S.tasks.push({id:uid(),athleteId:aid,date:x.date,type:'entrenamiento',title:`${d.name} · F${x.phase+1}`,data:{blocks:dayToBlocks(d,x.phase),attach:[]},status:'pending',progress:{sets:{},kg:{}},feedback:null,createdAt:Date.now(),planId:pp.id,planName:pp.name,phase:x.phase+1,week:x.week+1,day:x.day})});
+  pushNotif(aid,`Tu coach te asignó el plan «${pp.name}» desde el ${longDate(dates[0].date)}`);
   S.ui.athleteId=aid;S.ui.section='clientes';S.ui.coachTab='plan';S.ui.month=dates[0].date.slice(0,7);S.ui.selDay=dates[0].date;S.ui.athTab='agenda';
   closeModal();commit();toast(`${dates.length} entrenamientos asignados a ${S.athletes.find(a=>a.id===aid).name}`);
 }
