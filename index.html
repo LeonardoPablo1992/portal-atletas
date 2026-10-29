@@ -724,6 +724,16 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .del-big{font-size:54px;animation:delWave 1.6s ease-in-out 2}
 @keyframes delWave{0%,100%{transform:rotate(0)}25%{transform:rotate(18deg)}75%{transform:rotate(-12deg)}}
 @media (prefers-reduced-motion:reduce){.del-e.spin,.del-big,.del-box,.del-done{animation:none}}
+.lf-file{background:var(--green-50);border:1px solid var(--green-200);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.lf-sec{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;opacity:.7;transition:.2s}
+.lf-sec.on{opacity:1;border-color:var(--green-200);background:#fff}
+.lf-h{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.lf-h input,.lf-b label.chk input{width:18px;height:18px;accent-color:var(--green)}
+.lf-b{font-size:13px;color:var(--ink-2);margin:8px 0 2px 26px}
+.lf-days,.lf-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lf-chips span{background:var(--bg);border:1px solid var(--line-2);border-radius:999px;padding:4px 10px;font-size:12px}
+.lf-meals{display:flex;flex-direction:column;gap:4px}
+.lf-warn{margin-top:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:7px 10px;font-size:12px}
 </style>
 </head>
 <body>
@@ -949,7 +959,7 @@ const keyStr=(c,x)=>JSON.stringify(c==='athletes'?metaOf(x):x);
 function snapshot(){SNAP={};Object.keys(TABLES).forEach(c=>(S[c]||[]).forEach(x=>{SNAP[c+'|'+x.id]=keyStr(c,x)}))}
 function rowOf(c,x){const r={id:String(x.id),doc:c==='athletes'?metaOf(x):x,updated_at:new Date().toISOString()};if(PERSON.includes(c))r.athlete_email=x.athleteId;if(c==='tasks')r.date=x.date;return r}
 const uiKey=()=>'ptp_v2_ui_'+(ME?ME.email:'');
-function save(){try{const u={...S.ui};delete u.draft;delete u.pd;delete u.ap;delete u.rd;localStorage.setItem(uiKey(),JSON.stringify(u))}catch(e){}dirty=true;setSync('pending');clearTimeout(flushT);flushT=setTimeout(flush,600)}
+function save(){try{const u={...S.ui};delete u.draft;delete u.pd;delete u.ap;delete u.rd;delete u.lf;localStorage.setItem(uiKey(),JSON.stringify(u))}catch(e){}dirty=true;setSync('pending');clearTimeout(flushT);flushT=setTimeout(flush,600)}
 function commit(){save();renderApp()}
 async function flush(){
   if(!SB||!S||DEL.busy)return;
@@ -1408,6 +1418,7 @@ function coachHTML(compact){
         ${a.plan&&!a.plan.scheduled?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
         <button class="btn soft" onclick="openNutrition('${a.id}')">${ic('food',15)} Nutrición</button>
         <button class="btn ghost" onclick="openNewAthlete('${a.id}')">${ic('edit',15)} Perfil</button>
+        <label class="btn soft upl" title="Excel con el formato de la plantilla">${ic('file',15)} Cargar desde archivo<input type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="loadClientFile('${a.id}',this.files[0]);this.value=''"></label>
         <button class="btn yt" onclick="openAddTask(TODAY,'video')">${ic('video',16)} Video</button>
         <button class="btn primary" onclick="openAddTask(TODAY,'entrenamiento')">${ic('plus',16)} Tarea</button>
       </div>
@@ -2522,7 +2533,7 @@ async function exportPlanXlsx(id){
   if(!p)return;
   try{await loadXLSX()}catch(e){toast(e.message);return}
   const X=XLSX.utils,wb=X.book_new(),used=new Set(['datos del plan']);
-  const info=X.aoa_to_sheet([['Nombre del plan',p.name||''],['Objetivo / notas',p.desc||''],['Semanas por fase',p.wpp||2],[],['Una hoja por día. Edita y vuelve a subir este archivo en Plantillas → Subir Excel.']]);info['!cols']=[{wch:20},{wch:50}];
+  const info=X.aoa_to_sheet([['Nombre del plan',p.name||''],['Objetivo / notas',p.desc||''],['Semanas por fase',p.wpp||2],[],['Una hoja por día. Edita y vuelve a cargarlo en la ficha del cliente o en Plantillas → Cargar desde archivo.']]);info['!cols']=[{wch:20},{wch:50}];
   X.book_append_sheet(wb,info,'Datos del plan');
   p.days.forEach(d=>{
     const comb=[],kind=[];exGroups(d.rows).forEach(g=>{for(let i=g.s;i<=g.e;i++){comb[i]=g.L;kind[i]=g.n>1?g.kind+(d.rows[i].drop?' + Dropset':''):(d.rows[i].drop?'Dropset':'Aislado')}});
@@ -2541,8 +2552,8 @@ function parseTrainingWorkbook(wb,fname){
     const ws=wb.Sheets[sn];if(!ws||!ws['!ref'])return;const R=X.decode_range(ws['!ref']);
     const cell=(r,c)=>c==null?null:ws[X.encode_cell({r,c})],txt=(r,c)=>{const v=cell(r,c);return v?String(v.w!=null?v.w:v.v).trim():''};
     let hr=-1;for(let r=R.s.r;r<=Math.min(R.e.r,20)&&hr<0;r++)for(let c=R.s.c;c<=Math.min(R.e.c,30);c++)if(/^ejercicio$/i.test(txt(r,c))){hr=r;break}
-    if(hr<0){if(/instruc|nutri/i.test(sn))return;for(let r=R.s.r;r<=Math.min(R.e.r,30);r++){const k=txt(r,0).toLowerCase(),v=txt(r,1);if(!v)continue;if(/nombre/.test(k))plan.name=v;else if(/objetivo|nota/.test(k))plan.desc=v;else if(/semana/.test(k)&&parseInt(v)){plan.wpp=Math.max(1,Math.min(4,parseInt(v)));wppSet=true}}return}
-    if(/nutri|instruc/i.test(sn))return;
+    if(hr<0){if(/instruc|nutri|aliment|cliente|atleta/i.test(sn))return;for(let r=R.s.r;r<=Math.min(R.e.r,30);r++){const k=txt(r,0).toLowerCase(),v=txt(r,1);if(!v)continue;if(/nombre/.test(k))plan.name=v;else if(/objetivo|nota/.test(k))plan.desc=v;else if(/semana/.test(k)&&parseInt(v)){plan.wpp=Math.max(1,Math.min(4,parseInt(v)));wppSet=true}}return}
+    if(/nutri|instruc|cliente/i.test(sn))return;
     const col={ph:[[null,null],[null,null],[null,null],[null,null]]};
     for(let c=R.s.c;c<=Math.min(R.e.c,30);c++){const h=txt(hr,c).toLowerCase().replace(/\s+/g,' ');let m;if(!h)continue;
       if((m=h.match(/^(?:f|fase)\s*([1-4]).*serie/)))col.ph[m[1]-1][0]=c;
@@ -2571,7 +2582,7 @@ function parseTrainingWorkbook(wb,fname){
   plan.wppSet=wppSet;return plan;
 }
 async function uploadPlanXlsx(file,into){
-  if(!file)return;if(!/\.xlsx?$/i.test(file.name)){toast('Sube un archivo de Excel (.xlsx)');return}
+  if(!file)return;if(!(await isExcelFile(file))){toast('Solo se pueden cargar archivos de Excel (.xlsx) con el formato de la plantilla');return}
   let p;try{await loadXLSX();p=parseTrainingWorkbook(XLSX.read(await file.arrayBuffer(),{type:'array'}),file.name)}catch(e){console.warn(e);toast(e.message||'No pude leer el Excel');return}
   const wpp=p.wppSet;delete p.wppSet;const n=p.days.reduce((s,d)=>s+d.rows.length,0);
   if(into&&S.ui.pd&&document.getElementById('planEd')){collectPlan();S.ui.pd.days=p.days;if(p.desc)S.ui.pd.desc=p.desc;if(wpp)S.ui.pd.wpp=p.wpp;if(!S.ui.pd.name)S.ui.pd.name=p.name}
@@ -2579,8 +2590,107 @@ async function uploadPlanXlsx(file,into){
   S.ui.pday=0;renderPlanEditor();toast(`Excel leído: ${p.days.length} días · ${n} ejercicios. Revisa y guarda.`);
 }
 
+/* =========================================================
+   CARGAR DESDE ARCHIVO (ficha del cliente)
+   Solo Excel con el formato de la plantilla: plan (hojas por día), Datos del cliente y Nutrición.
+========================================================= */
+async function isExcelFile(file){
+  if(!file||!/\.(xlsx|xls)$/i.test(file.name))return false;
+  try{const b=new Uint8Array(await file.slice(0,8).arrayBuffer());
+    const zip=b[0]===0x50&&b[1]===0x4b&&b[2]===0x03&&b[3]===0x04,ole=b[0]===0xd0&&b[1]===0xcf&&b[2]===0x11&&b[3]===0xe0;return zip||ole}catch(e){return false}
+}
+function parseClientExtras(wb){
+  const X=XLSX.utils,out={client:null,nutrition:null};
+  wb.SheetNames.forEach(sn=>{
+    const ws=wb.Sheets[sn];if(!ws||!ws['!ref'])return;const R=X.decode_range(ws['!ref']);
+    const cell=(r,c)=>ws[X.encode_cell({r,c})],txt=(r,c)=>{const v=cell(r,c);return v?String(v.w!=null?v.w:v.v).trim():''},num=(r,c)=>{const v=cell(r,c);if(!v)return null;const n=typeof v.v==='number'?v.v:parseFloat(String(v.v).replace(',','.').replace(/[^\d.]/g,''));return isNaN(n)?null:n};
+    if(/cliente|atleta/i.test(sn)){
+      const c={};for(let r=R.s.r;r<=Math.min(R.e.r,40);r++){const k=txt(r,0).toLowerCase(),v=txt(r,1);if(!k||v==='')continue;const n=num(r,1);
+        if(/g[eé]nero|sexo/.test(k)){if(/^m(ujer)?$|fem/i.test(v))c.gender='Mujer';else if(/^h(ombre)?$|masc/i.test(v))c.gender='Hombre'}
+        else if(/^edad/.test(k)&&n)c.age=String(Math.round(n));
+        else if(/peso meta|meta/.test(k)&&n)c.goalWeight=String(n);
+        else if(/^peso/.test(k)&&n)c.weight=n;
+        else if(/estatura|altura/.test(k)&&n)c.height=n<3?Math.round(n*100):Math.round(n);
+        else if(/grasa/.test(k)&&n!=null)c.bodyFat=String(n<1?Math.round(n*1000)/10:n);
+        else if(/muscul/.test(k)&&n)c.muscleMass=String(n);
+        else if(/fc|reposo|frecuencia/.test(k)&&n)c.hrRest=String(Math.round(n));
+        else if(/actividad/.test(k)){const s=v.toLowerCase();c.activity=String(n&&n<3?n:/muy/.test(s)?1.9:/alto|intens/.test(s)?1.725:/moder/.test(s)?1.55:/liger/.test(s)?1.375:/sedent/.test(s)?1.2:'')}
+        else if(/objetivo/.test(k))c.goal=v;
+        else if(/kcal|calor/.test(k)&&n)c.kcalTarget=Math.round(n);
+        else if(/ocupaci/.test(k))c.occupation=v;else if(/deporte/.test(k))c.sport=v;}
+      if(c.activity==='')delete c.activity;
+      if(Object.keys(c).length)out.client=c;return;
+    }
+    if(/nutri|aliment|comida/i.test(sn)){
+      let hr=-1;const col={};const facts={};
+      for(let r=R.s.r;r<=Math.min(R.e.r,40)&&hr<0;r++){const a=txt(r,0).toLowerCase();if(a==='geb'){facts.geb=num(r,1)}else if(a==='kcal'){facts.kcal=num(r,1)}
+        for(let c=R.s.c;c<=Math.min(R.e.c,12);c++)if(/^hora$/i.test(txt(r,c))){hr=r;break}}
+      if(hr<0)return;
+      for(let c=R.s.c;c<=Math.min(R.e.c,12);c++){const h=txt(hr,c).toLowerCase();if(/^hora/.test(h))col.time=c;else if(/^comida|nombre/.test(h))col.name=c;else if(/aliment/.test(h))col.foods=c;else if(/kcal|calor/.test(h))col.kcal=c;else if(/suplem/.test(h))col.supl=c;else if(/agua/.test(h))col.water=c}
+      if(col.foods==null)return;
+      const NAMES=['Primera comida','Segunda comida','Tercera comida','Cuarta comida','Quinta comida','Sexta comida','Séptima comida'],meals=[],notes=[];
+      for(let r=hr+1;r<=R.e.r;r++){const t=col.time!=null?txt(r,col.time):'',f=txt(r,col.foods);
+        if(/^notas?$/i.test(txt(r,0))){const n=txt(r,1);if(n)notes.push(n);continue}
+        if(/^total/i.test(t))break;if(!f)continue;
+        meals.push({id:'m'+meals.length,time:t.replace(/^(\d{1,2}:\d{2}).*/,'$1'),name:(col.name!=null&&txt(r,col.name))||NAMES[meals.length]||`Comida ${meals.length+1}`,foods:f.split(/\s*[,;\n]\s*/).filter(Boolean),kcal:col.kcal!=null?num(r,col.kcal):null,supl:col.supl!=null?txt(r,col.supl):'',water:col.water!=null?txt(r,col.water):''})}
+      if(meals.length)out.nutrition={meals,menus:null,notes,snacks:[],macros:[],kcalTarget:facts.kcal||meals.reduce((s,m)=>s+(m.kcal||0),0)||null,label:'Cargado desde Excel',geb:facts.geb||null};
+    }
+  });
+  return out;
+}
+const CF_LBL={gender:['Género',''],age:['Edad','años'],weight:['Peso','kg'],height:['Estatura','cm'],bodyFat:['% grasa','%'],muscleMass:['Masa muscular','kg'],hrRest:['FC en reposo','lpm'],activity:['Actividad',''],goal:['Objetivo',''],goalWeight:['Peso meta','kg'],kcalTarget:['Kcal del plan','kcal'],occupation:['Ocupación',''],sport:['Deporte','']};
+async function loadClientFile(aid,file){
+  const a=S.athletes.find(x=>x.id===aid);if(!a||!file)return;
+  if(!(await isExcelFile(file))){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} Archivo no válido</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">Solo se pueden cargar archivos de <b>Excel (.xlsx)</b> con el formato de la plantilla.</p><p class="muted" style="font-size:13px">«${esc(file.name)}» no es un Excel. Descarga la plantilla, llénala y vuelve a intentarlo.</p></div><div class="modal-f"><a class="btn soft" href="/plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
+  let wb,plan=null,ex;
+  try{await loadXLSX();wb=XLSX.read(await file.arrayBuffer(),{type:'array'})}catch(e){toast(e.message||'No pude abrir el Excel');return}
+  try{plan=parseTrainingWorkbook(wb,file.name)}catch(e){plan=null}
+  try{ex=parseClientExtras(wb)}catch(e){console.warn(e);ex={}}
+  if(!plan&&!ex.client&&!ex.nutrition){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} No encontré datos</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">El Excel no tiene el formato de la plantilla: no hay hojas de días con la columna «Ejercicio», ni «Datos del cliente», ni «Nutrición».</p></div><div class="modal-f"><a class="btn soft" href="/plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
+  if(plan){delete plan.wppSet}
+  S.ui.lf={aid,plan,client:ex.client,nutrition:ex.nutrition,fname:file.name,start:TODAY,doPlan:!!plan,doSched:!!plan,doNut:!!ex.nutrition,doCli:!!ex.client};
+  renderLoadFile();
+}
+function renderLoadFile(){
+  const L=S.ui.lf,a=S.athletes.find(x=>x.id===L.aid),p=L.plan,n=L.nutrition,c=L.client;
+  const map=p?planWeekMap(p):[],old=a.plan&&a.plan.tplId?planTasksPending(a.plan.tplId,true).filter(t=>t.date>=L.start).length:0;
+  const nSes=p?planSchedule(p,{start:L.start,wpp:p.wpp||2,map}).length:0;
+  const sec=(k,on,ttl,body)=>`<div class="lf-sec ${on?'on':''}"><label class="lf-h"><input type="checkbox" ${on?'checked':''} onchange="S.ui.lf.${k}=this.checked;renderLoadFile()"> ${ttl}</label>${on?`<div class="lf-b">${body}</div>`:''}</div>`;
+  openModal(`<div class="modal"><div class="modal-h"><h3>${ic('file',18)} Cargar desde archivo · ${esc(a.name.split(' ')[0])}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
+  <div class="modal-b"><div class="lf-file">📄 <b>${esc(L.fname)}</b> · revisa lo que se va a cargar y elige qué aplicar.</div>
+    ${p?sec('doPlan',L.doPlan,`🏋️ Plan de entrenamiento: <b>${esc(p.name)}</b>`,`${p.days.length} días · ${p.days.reduce((s,d)=>s+d.rows.length,0)} ejercicios · 4 fases × ${p.wpp||2} sem
+      <div class="lf-days">${p.days.map((d,i)=>`<span class="gtag">${esc(d.name)}${map[i]>=0?` · ${DIAS[map[i]]}`:''}</span>`).join('')}</div>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" ${L.doSched?'checked':''} onchange="S.ui.lf.doSched=this.checked;renderLoadFile()"> Programarlo en su calendario desde</label>
+      ${L.doSched?`<div class="row" style="align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap"><input type="date" class="inp" style="width:auto" min="${TODAY}" value="${L.start}" onchange="S.ui.lf.start=this.value<TODAY?TODAY:this.value;renderLoadFile()"><span class="muted" style="font-size:12px">${nSes} sesiones · ${p.days.length>=6?'lunes a sábado':'lunes a viernes'}</span></div>${old?`<div class="lf-warn">♻️ Se reemplazarán ${old} sesiones pendientes de su plan actual desde esa fecha (las completadas se conservan).</div>`:''}`:''}`):''}
+    ${n?sec('doNut',L.doNut,`🍽️ Alimentación: <b>${n.meals.length} comidas</b>${n.kcalTarget?` · ${fmtN(n.kcalTarget)} kcal`:''}`,`<div class="lf-meals">${n.meals.map(m=>`<div><b>${esc(m.time||'')}</b> ${esc(m.name)} · <span class="muted">${esc(m.foods.join(', ').slice(0,70))}${m.kcal?` · ${m.kcal} kcal`:''}</span></div>`).join('')}</div>${a.nutrition?'<div class="lf-warn">♻️ Reemplaza su plan de alimentación actual.</div>':''}`):''}
+    ${c?sec('doCli',L.doCli,`🧍 Datos del cliente: <b>${Object.keys(c).length} datos</b>`,`<div class="lf-chips">${Object.entries(c).map(([k,v])=>{const l=CF_LBL[k]||[k,''];const val=k==='activity'?((ACT.find(([f])=>f===+v)||[])[1]||v):v;return `<span>${l[0]}: <b>${esc(val)}${l[1]?' '+l[1]:''}</b></span>`}).join('')}</div>`):''}
+  </div>
+  <div class="modal-f"><a class="btn ghost sm" href="/plantilla-entrenamiento.xlsx" download style="margin-right:auto">${ic('file',13)} Plantilla</a><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" ${L.doPlan||L.doNut||L.doCli?'':'disabled'} onclick="applyLoadFile()">${ic('check',15)} Cargar en la página</button></div></div>`);
+}
+function applyLoadFile(){
+  const L=S.ui.lf,a=S.athletes.find(x=>x.id===L.aid);if(!L||!a)return;const done=[];
+  if(L.doCli&&L.client){const c={...L.client};const w=c.weight;delete c.weight;Object.assign(a,c);if(c.gender)a.genderTs=Date.now();if(w&&w!==lastWeight(a.id))S.evo.push({id:uid(),athleteId:a.id,date:TODAY,peso:w});done.push('datos')}
+  if(L.doNut&&L.nutrition){a.nutrition=JSON.parse(JSON.stringify(L.nutrition));if(L.nutrition.kcalTarget&&!(L.doCli&&L.client&&L.client.kcalTarget))a.kcalTarget=L.nutrition.kcalTarget;if(L.nutrition.geb&&!a.geb)a.geb=L.nutrition.geb;a.nutImp=true;done.push('alimentación')}
+  let ses=0;
+  if(L.doPlan&&L.plan){
+    const oldTpl=a.plan&&a.plan.tplId;
+    const tpl={...JSON.parse(JSON.stringify(L.plan)),id:uid(),src:'',athleteId:a.id,phase:0,desc:L.plan.desc||'Cargado desde Excel'};
+    S.plans.push(tpl);a.plan={...JSON.parse(JSON.stringify(tpl)),tplId:tpl.id};
+    library_add:{tpl.days.forEach(d=>d.rows.forEach(r=>{const x=libFind(r.name);if(!x)S.library.push({id:uid(),name:r.name.trim(),group:guessGroup(d.name),type:'Hipertrofia',video:r.video||'',notes:'',src:['Coach']});else if(r.video&&!x.video)x.video=r.video}))}
+    if(L.doSched){
+      if(oldTpl)S.tasks=S.tasks.filter(t=>!(t.planId===oldTpl&&t.status!=='done'&&!t.hist&&t.date>=L.start));
+      const map=planWeekMap(tpl),dates=planSchedule(tpl,{start:L.start,wpp:tpl.wpp||2,map});
+      dates.forEach(x=>{const d=tpl.days[x.day];S.tasks.push({id:uid(),athleteId:a.id,date:x.date,type:'entrenamiento',title:`${d.name} · F${x.phase+1}`,data:{blocks:dayToBlocks(d,x.phase),attach:[]},status:'pending',progress:{sets:{},kg:{}},feedback:null,createdAt:Date.now(),planId:tpl.id,planName:tpl.name,phase:x.phase+1,week:x.week+1,day:x.day})});
+      ses=dates.length;if(dates.length){const end=dates[dates.length-1].date;a.plan.scheduled={start:L.start,end,days:tpl.days.map((d,i)=>[d.name,map[i]])};tpl.scheduled=a.plan.scheduled;S.ui.month=dates[0].date.slice(0,7)}
+    }
+    done.push(ses?`plan (${ses} sesiones)`:'plan');
+  }
+  pushNotif(a.id,`Tu coach actualizó ${done.includes('alimentación')&&done.length===1?'tu alimentación':'tu plan'}${ses?`: ${ses} sesiones nuevas en tu calendario`:''}`);
+  S.ui.lf=null;S.ui.coachTab='plan';closeModal();commit();toast(`Cargado: ${done.join(', ')}`);
+}
+
 function plansHTML(){
-  return `<div class="src-banner">${ic('layers',18)}<div>Plantillas con el formato de tu Excel: días por grupo muscular y 4 fases de series × reps. Crea el plan completo aquí y asígnalo sin subir archivos, o hazlo en Excel.</div><span class="xl-bar"><a class="btn soft sm" href="/plantilla-entrenamiento.xlsx" download>${ic('file',13)} Descargar plantilla Excel</a><label class="btn primary sm upl">${ic('plus',13)} Subir Excel<input type="file" accept=".xlsx,.xls" onchange="uploadPlanXlsx(this.files[0]);this.value=''"></label></span></div>
+  return `<div class="src-banner">${ic('layers',18)}<div>Plantillas con el formato de tu Excel: días por grupo muscular y 4 fases de series × reps. Crea el plan completo aquí y asígnalo sin subir archivos, o hazlo en Excel.</div><span class="xl-bar"><a class="btn soft sm" href="/plantilla-entrenamiento.xlsx" download>${ic('file',13)} Descargar plantilla Excel</a><label class="btn primary sm upl">${ic('plus',13)} Cargar desde archivo<input type="file" accept=".xlsx,.xls" onchange="uploadPlanXlsx(this.files[0]);this.value=''"></label></span></div>
   <div class="plans-grid">
     <div class="plan-new" onclick="openPlanEditor()"><div style="text-align:center">${ic('plus',28)}<div style="margin-top:6px">Crear plan desde cero</div></div></div>
     ${S.plans.map(p=>{const n=p.days.reduce((s,d)=>s+d.rows.length,0);return `<div class="card plan-card">

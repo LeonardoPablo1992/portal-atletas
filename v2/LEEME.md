@@ -42,3 +42,10 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - Requiere correr una vez `eliminar-cuenta.sql` en Supabase → SQL Editor. Crea la función `delete_my_account()` y el permiso para que cada quien borre sus archivos del bucket `evidencias`.
 - Borra: tareas, cargas, medidas, foto, ciclo, alimentación, mensajes, actividad, avisos, ficha, plan, sesiones, comentarios, evidencias (filas y archivos), perfil y el usuario de acceso. El coach no puede borrarse por esta vía.
 - Después la persona puede registrarse otra vez con el mismo correo y empieza en blanco.
+
+## Cargar desde archivo (ficha del cliente)
+
+- Botón **Cargar desde archivo** en la ficha de cada cliente. Solo acepta Excel (.xlsx/.xls, se valida el contenido, no solo la extensión) con el formato de `plantilla-entrenamiento.xlsx`.
+- Lee: hojas de días (plan), «Datos del plan», «Datos del cliente» y «Nutrición». Muestra una vista previa y el coach elige qué aplicar.
+- El plan se asigna al cliente y se programa en su calendario desde la fecha elegida (L–V o L–S); reemplaza las sesiones pendientes del plan anterior y conserva las completadas.
+- También lee la plantilla anterior `plantilla-plan.xlsx`.
