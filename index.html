@@ -1078,7 +1078,7 @@ function parseOldPlan(html){
    - Mismas funciones que la app real, incluido dar de alta clientes.
 ========================================================= */
 const DEMO={HASH:'1335ccb2a88a30afe6dfb976f0cd4c380d59ae73f40275f24325ba01b93c87ad',COACH:'coach@protrainerplus.demo',PASS:'Demo-PTP-2026',
-  KDB:'ptp_demo_db_v1',KS:'ptp_demo_session',KK:'ptp_demo_key',on:false,key:'',db:null,client:null};
+  KDB:'ptp_demo_db_v2',KS:'ptp_demo_session',KK:'ptp_demo_key',on:false,key:'',db:null,client:null};
 async function demoCheck(){
   const m=location.hash.match(/demo=([\w-]+)/);let k=m?m[1]:'';
   if(!k){try{k=sessionStorage.getItem(DEMO.KK)||''}catch(e){}}
@@ -1091,8 +1091,9 @@ async function demoCheck(){
   return true;
 }
 function demoLoadDB(){
+  try{localStorage.removeItem('ptp_demo_db_v1')}catch(e){}
   let db=null;try{db=JSON.parse(localStorage.getItem(DEMO.KDB)||'null')}catch(e){}
-  if(!db||db.v!==1)db={v:1,seeded:false,auth:{[DEMO.COACH]:{pw:DEMO.PASS,name:'Coach Demo'}},profiles:[],plans:[],pt_tasks:[],pt_acts:[],pt_evo:[],pt_messages:[],pt_activity:[],pt_notifs:[],pt_athletes:[],pt_library:[],pt_templates:[]};
+  if(!db||db.v!==2)db={v:2,seeded:false,auth:{[DEMO.COACH]:{pw:DEMO.PASS,name:'Coach Demo'}},profiles:[],plans:[],pt_tasks:[],pt_acts:[],pt_evo:[],pt_messages:[],pt_activity:[],pt_notifs:[],pt_athletes:[],pt_library:[],pt_templates:[]};
   return db;
 }
 function demoPersist(){try{localStorage.setItem(DEMO.KDB,JSON.stringify(DEMO.db))}catch(e){console.warn('demo: no se pudo guardar',e)}}
@@ -1138,56 +1139,13 @@ function demoLoginHTML(msg){
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="username" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar al demo</button></form>
     <p style="font-size:12px;margin:14px 0 0" class="muted">Todo lo que hagas aquí son datos de ejemplo y no sale de este navegador. <a href="#" onclick="event.preventDefault();demoReset()" style="color:var(--green-d)">Reiniciar demo</a></p></div></div>`;
 }
-/* Datos de ejemplo: 4 clientes ficticios con plan, 2 semanas de historial, alimentación y medidas */
-function demoNutrition(kcal){
-  const k=kcal/2000,r=v=>Math.round(v*k/10)*10;
-  return {meals:[
-    {id:'m0',time:'7:00',name:'Desayuno',foods:['Avena 60 g','3 claras + 1 huevo','1 plátano'],kcal:r(520),supl:'Creatina 5 g',water:''},
-    {id:'m1',time:'10:30',name:'Colación',foods:['Yogur griego 200 g','Nueces 20 g','Fresas'],kcal:r(330),supl:'',water:''},
-    {id:'m2',time:'14:00',name:'Comida',foods:['Arroz 150 g cocido','Pechuga 150 g','Verduras al gusto','Aguacate 40 g'],kcal:r(620),supl:'',water:''},
-    {id:'m3',time:'17:30',name:'Pre-entreno',foods:['Licuado: proteína 1 scoop, leche light, avena 30 g'],kcal:r(320),supl:'Whey 25 g',water:''},
-    {id:'m4',time:'21:00',name:'Cena',foods:['Tortillas de maíz 2','Carne magra 120 g','Ensalada'],kcal:r(410),supl:'Magnesio',water:''}],
-    menus:null,notes:['Toma 2.5–3 L de agua al día.','Si cambias una comida, anota qué comiste en «Con cambios».'],snacks:['Jícama con limón','Gelatina light','Palomitas naturales 20 g'],macros:[],kcalTarget:kcal,label:'Plan de ejemplo'};
-}
 function seedDemo(){
-  let s=20261028;const rnd=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648},pick=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+  /* Demo en limpio: sin clientes. Solo se dejan la biblioteca y las plantillas base, sin nombres de atletas reales. */
   const NM={'Lizeth Esquivel':'Glúteo y pierna · 5 días','Leonardo Pablo':'Hipertrofia · 6 días','Masiel':'Tonificación · 5 días'};
   S.plans.forEach(p=>{if(NM[p.src])p.name='Plan base · '+NM[p.src];p.src=''});
   S.library.forEach(x=>{x.src=['Coach']});
-  const PEOPLE=[
-    {name:'Ana Ramírez',email:'ana@protrainerplus.demo',gender:'Mujer',age:'29',occupation:'Diseñadora',sport:'Gimnasio / pesas',hrRest:'62',height:164,bodyFat:'27',muscleMass:'24',activity:'1.55',goal:'Hipertrofia de glúteo',goalWeight:'60',w:63.4,tpl:'Glúteo y pierna',kcal:1900,cyc:true},
-    {name:'Diego Morales',email:'diego@protrainerplus.demo',gender:'Hombre',age:'34',occupation:'Ingeniero',sport:'CrossFit',hrRest:'58',height:178,bodyFat:'19',muscleMass:'36',activity:'1.725',goal:'Recomposición',goalWeight:'80',w:84.2,tpl:'Hipertrofia',kcal:2700},
-    {name:'Sofía Herrera',email:'sofia@protrainerplus.demo',gender:'Mujer',age:'41',occupation:'Abogada',sport:'Running',hrRest:'60',height:168,bodyFat:'31',muscleMass:'23',activity:'1.55',goal:'Pérdida de grasa',goalWeight:'64',w:70.5,tpl:'Tonificación',kcal:1700},
-    {name:'Marco Treviño',email:'marco@protrainerplus.demo',gender:'Hombre',age:'25',occupation:'Estudiante',sport:'Fútbol',hrRest:'55',height:181,bodyFat:'14',muscleMass:'38',activity:'1.9',goal:'Fuerza y velocidad',goalWeight:'78',w:76.8,tpl:'Hipertrofia',kcal:3000}];
-  const start=addDays(mondayOf(TODAY),-14),clone=x=>JSON.parse(JSON.stringify(x));
-  PEOPLE.forEach((x,pi)=>{
-    if(S.athletes.some(a=>a.id===x.email))return;
-    DEMO.db.profiles.push({email:x.email,full_name:x.name});DEMO.db.auth[x.email]={pw:DEMO.PASS,name:x.name};
-    const a={id:x.email,email:x.email,color:colorFor(x.email),name:x.name,goal:x.goal,age:x.age,gender:x.gender,genderTs:Date.now(),occupation:x.occupation,sport:x.sport,hrRest:x.hrRest,height:x.height,bodyFat:x.bodyFat,muscleMass:x.muscleMass,activity:x.activity,goalWeight:x.goalWeight,kcalTarget:x.kcal,nutrition:demoNutrition(x.kcal),nutImp:true};
-    S.athletes.push(a);
-    const base=S.plans.find(p=>p.name.includes(x.tpl))||S.plans[0];if(!base)return;
-    const tpl={...clone(base),id:uid(),name:`Plan de ${x.name.split(' ')[0]}`,src:'',athleteId:a.id,wpp:1,phase:0,desc:x.goal};
-    S.plans.push(tpl);a.plan={...clone(tpl),tplId:tpl.id};
-    scheduleAthletePlanAuto(a.id,start,4);
-    const skipP=[0.1,0.05,0.3,0.15][pi];
-    S.tasks.filter(t=>t.athleteId===a.id&&t.date<TODAY).forEach(t=>{delete t.hist;if(rnd()<skipP)return;
-      t.status='done';fillAll(t);t.progress.kg={};(t.data.blocks||[]).forEach((b,bi)=>b.exercises.forEach((e,ei)=>{if(rnd()<0.7)t.progress.kg[`${bi}-${ei}`]=pick(4,24)*2.5}));
-      const min=pick(50,80),rpe=pick(6,9),sl=pick(5,9),fd=pick(6,9),en=pick(5,9),day=parse(t.date).getTime();
-      t.readiness={sleep:sl,food:fd,energy:en,menstrual:false,hrNow:+x.hrRest+pick(0,8),score:Math.round((sl+fd+en)/3*10)/10,ts:day+17*36e5};
-      t.feedback={effort:rpe,durMin:min,zones:null,hrAvg:pick(118,152),zoneMain:null,rating:pick(3,5),comment:rnd()<0.2?'Me sentí muy bien hoy 💪':'',duration:`${min} min`,completedAt:day+18.5*36e5};
-      [0,1,2,3,4].forEach(i=>{if(rnd()<0.85)S.evo.push({id:uid(),athleteId:a.id,date:t.date,kind:'meal',mealId:'m'+i,mealName:a.nutrition.meals[i].name,status:rnd()<0.85?'ok':'var',ts:day+(8+i*3)*36e5})});
-    });
-    [[-21,0.9],[-14,0.5],[-7,0.2],[0,0]].forEach(([d,f])=>S.evo.push({id:uid(),athleteId:a.id,date:addDays(TODAY,d),peso:Math.round((x.w+f*(x.w>+x.goalWeight?1.6:-0.8))*10)/10}));
-    if(x.cyc)S.evo.push({id:uid(),athleteId:a.id,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:addDays(TODAY,-9),len:28,plen:5});
-    const last=S.tasks.filter(t=>t.athleteId===a.id&&t.status==='done').sort((p,q)=>q.date.localeCompare(p.date))[0];
-    if(last)S.activity.push({id:uid(),athleteId:a.id,kind:'done',text:`completó «${last.title}» (100%) · carga ${fmtN(last.feedback.durMin*last.feedback.effort)} UA`,ts:last.feedback.completedAt,read:false});
-  });
-  S.messages.push({id:uid(),athleteId:'ana@protrainerplus.demo',from:'athlete',text:'Coach, ¿puedo cambiar el hip thrust por puente de glúteo esta semana? La barra está ocupada en mi gym.',ts:Date.now()-3*36e5,seen:false});
-  S.activity.sort((p,q)=>q.ts-p.ts);
-  DEMO.db.seeded=true;demoPersist();S.ui.athleteId=PEOPLE[0].email;S.ui.section='clientes';
-  save();
+  DEMO.db.seeded=true;demoPersist();S.ui.section='clientes';save();
 }
-
 window.addEventListener('hashchange',()=>{if(/demo=/.test(location.hash))location.reload()});
 async function boot(){
   const dm=await demoCheck();if(dm==='bad')return;if(dm)demoSetup();

@@ -33,5 +33,5 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 ## Demo privado para coaches
 
 - Se abre solo con el enlace `https://atletas.headcoachleonardopablo.com/#demo=<clave>`. El repo guarda únicamente el hash SHA-256 de la clave (`DEMO.HASH` en `index.html`); para cambiar la clave, genera una nueva y reemplaza el hash.
-- No usa Supabase: todo vive en el navegador del visitante (localStorage), con 4 clientes ficticios, planes, historial, alimentación y medidas. Cada visitante tiene su propia copia; «Reiniciar demo» la borra.
+- No usa Supabase: todo vive en el navegador del visitante (localStorage). Arranca en limpio, sin clientes; solo trae la biblioteca de ejercicios y 3 plantillas base sin nombres de atletas. Cada visitante tiene su propia copia; «Reiniciar demo» la borra.
 - Funciona igual que la app real: crear clientes (genera correo y contraseña de demo), planes, tareas, Excel, vista del atleta.
