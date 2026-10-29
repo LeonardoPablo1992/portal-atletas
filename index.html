@@ -828,6 +828,41 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 .tchip.aero-t:hover{background:#e0f2fe;border-color:#0284c7}
 .mq-w{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
 .mq-o{border:1px solid #bae6fd;border-radius:10px;padding:7px 10px;font-size:13px;min-width:160px;background:#fff}
+.meas-card .meas-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.meas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.mg{border:1px solid var(--line);border-radius:14px;padding:9px 11px;background:#fff;border-left:4px solid #e5e7eb}
+.mg.good{border-left-color:#10b981}.mg.bad{border-left-color:#fb923c}.mg.eq,.mg.neu{border-left-color:#60a5fa}
+.mg-l{font-size:11.5px;color:#6b7280;font-weight:600}.mg-v{font-size:18px;font-weight:800}.mg-v small{font-size:11px;color:#9ca3af;font-weight:600}
+.mg-d{font-size:11.5px;font-weight:700;color:#6b7280}.mg.good .mg-d{color:#059669}.mg.bad .mg-d{color:#ea580c}.mg.eq .mg-d,.mg.neu .mg-d{color:#2563eb}
+.meas-hist{margin-top:12px}.meas-hist summary{cursor:pointer;font-weight:700;color:var(--green-d);font-size:13px;padding:6px 0}
+.meas-hist .tbl td,.meas-hist .tbl th{white-space:nowrap;font-size:12.5px}
+.ms-sec{font-weight:800;font-size:13px;color:var(--green-d);margin:10px 0 6px}
+.ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px}
+.ms-grid .field small{color:#9ca3af;font-weight:500}
+.bv-modal{height:auto;max-height:94vh}.bv-modal .modal-b{overflow:auto}
+.bv-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.seg-sm{display:inline-flex;background:var(--green-50);border:1px solid var(--green-200);border-radius:999px;padding:3px}
+.seg-sm button{border:0;background:transparent;padding:6px 14px;border-radius:999px;color:var(--green-d);font-weight:700;font-size:12.5px;cursor:pointer}
+.seg-sm button.on{background:var(--green);color:#fff}
+.bv-sum{background:linear-gradient(135deg,#ecfdf5,#f0f9ff);border:1px solid #d1fae5;border-radius:16px;padding:12px 14px;font-size:14px;line-height:1.5;margin-bottom:12px}
+.bv-wrap{display:grid;grid-template-columns:minmax(300px,1.1fr) 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.bv-wrap{grid-template-columns:1fr}}
+.bv-body{background:#fff;border:1px solid var(--line);border-radius:20px;padding:8px}
+.body-svg{width:100%;max-height:68vh;display:block}
+.body-svg .bp-l{animation:bpIn .5s ease both}
+@keyframes bpIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.bv-leg{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;font-size:11.5px;color:#6b7280;padding:4px 6px 8px}
+.bv-leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.bv-tops{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.bv-top{border:1px solid var(--line);border-radius:16px;padding:10px;background:#fff}
+.bv-top .l{font-size:12px;color:#6b7280;font-weight:700;display:flex;align-items:center;gap:4px}.bv-top .v{font-size:20px;font-weight:800}.bv-top .v small{font-size:11px;color:#9ca3af}
+.bv-top .d{font-size:12px;font-weight:800}
+.spk{width:100%;height:auto;display:block;margin-top:4px}
+.bv-list{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+.bv-row{display:grid;grid-template-columns:12px 1fr 90px 66px 44px;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.bv-row:last-child{border-bottom:0}.bv-row .dot{width:10px;height:10px;border-radius:50%}.bv-row .n{font-weight:700}.bv-row .v{font-weight:700;text-align:right}.bv-row .d{font-weight:800;text-align:right}
+.bv-row .spk{margin:0}
+@media(max-width:480px){.bv-tops{grid-template-columns:1fr 1fr 1fr}.bv-top .v{font-size:16px}.bv-row{grid-template-columns:10px 1fr 70px 60px 40px}}
 </style>
 </head>
 <body>
@@ -1739,7 +1774,7 @@ function coachHTML(compact){
   const ls=loadStats(a.id), sec=S.ui.section||'clientes';
   let body='';
   if(tab==='plan') body=`<div class="card">${calHTML('coach')}</div>`;
-  else if(tab==='evo') body=compHTML(a,'coach')+evoHTML(a.id,'coach');
+  else if(tab==='evo') body=compHTML(a,'coach')+measCardHTML(a,'coach')+evoHTML(a.id,'coach');
   else if(tab==='stats') body=statsHTML(a.id,'coach');
   else if(tab==='msgs') body=`<div class="card">${chatHTML(a.id,'coach')}</div>`;
   else body=activityHTML(a.id);
@@ -2448,7 +2483,7 @@ function athleteHTML(){
   if(tab==='agenda') body=oldPlanCard(a)+agendaHTML(a);
   else if(tab==='plan') body=myPlanHTML(a);
   else if(tab==='cal') body=`<div class="card" style="overflow:hidden">${calHTML('athlete')}</div><div style="height:12px"></div>${dayListHTML(a,S.ui.selDay)}`;
-  else if(tab==='evo') body=tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+evoHTML(a.id,'athlete');
+  else if(tab==='evo') body=measCardHTML(a,'athlete')+tlAthHTML(a.id)+periodHTML(a.id,'athlete')+athleteLoadHTML(a.id)+evoHTML(a.id,'athlete');
   else if(tab==='nut') body=athNutHTML(a);
   else if(tab==='perfil') body=profilePageHTML(a);
   else body=`<div class="card">${chatHTML(a.id,'athlete')}</div>`;
@@ -2637,6 +2672,142 @@ function sendMsg(role){
 /* =========================================================
    EVOLUCIÓN
 ========================================================= */
+/* =========================================================
+   MEDIDAS CORPORALES · peso, % grasa, IMM y 7 circunferencias
+   Registros en pt_evo (sin «kind») con meas:true. Compatibles con los registros previos
+   (peso, grasa, cintura, cadera→glúteo).
+========================================================= */
+const MEAS=[
+  {k:'peso',l:'Peso',u:'kg',g:'goal',min:25,max:300},
+  {k:'grasa',l:'% grasa',u:'%',g:-1,min:2,max:70},
+  {k:'imm',l:'IMM',u:'kg/m²',g:1,min:4,max:35,tip:'Índice de masa muscular: kg de músculo ÷ estatura²'},
+  {k:'hombro',l:'Hombro',u:'cm',g:1,min:40,max:200},
+  {k:'pecho',l:'Pecho',u:'cm',g:1,min:40,max:200},
+  {k:'abdomen',l:'Abdomen',u:'cm',g:-1,min:40,max:200},
+  {k:'cintura',l:'Cintura',u:'cm',g:-1,min:35,max:200},
+  {k:'gluteo',l:'Glúteo',u:'cm',g:1,min:40,max:200},
+  {k:'pierna',l:'Pierna',u:'cm',g:1,min:20,max:120},
+  {k:'pantorrilla',l:'Pantorrilla',u:'cm',g:1,min:15,max:80}];
+const MEAS_DAYS=92;
+const measVal=(e,k)=>{let v=e[k];if((v==null||v==='')&&k==='gluteo')v=e.cadera;return v==null||v===''||isNaN(+v)?null:+v};
+function measRows(aid,from){return S.evo.filter(e=>e.athleteId===aid&&!e.kind&&(!from||e.date>=from)&&MEAS.some(m=>measVal(e,m.k)!=null)).sort((a,b)=>a.date.localeCompare(b.date)||(a.ts||0)-(b.ts||0))}
+function measSeries(aid,k,from){const m=new Map();measRows(aid,from).forEach(e=>{const v=measVal(e,k);if(v!=null)m.set(e.date,v)});return [...m].map(([date,v])=>({date,v}))}
+function measGood(a,m,first){if(m.g!=='goal')return m.g;const gw=+a.goalWeight;if(gw&&first!=null)return gw<first?-1:gw>first?1:0;const g=normTxt(a.goal||'');return /defin|perdida|grasa|bajar/.test(g)?-1:/hipertrof|masa|volumen|subir/.test(g)?1:0}
+function measStat(a,m,from){
+  const s=measSeries(a.id,m.k,from);if(!s.length)return {m,s,st:'none'};
+  const f=s[0].v,l=s[s.length-1].v,d=Math.round((l-f)*10)/10,g=measGood(a,m,f);
+  return {m,s,first:f,last:l,d,st:s.length<2||Math.abs(d)<0.1?'eq':g===0?'neu':Math.sign(d)===g?'good':'bad'};
+}
+const fmtD=d=>(d>0?'+':'')+String(d).replace('.',',');
+const fmtV=v=>String(Math.round(v*10)/10).replace('.',',');
+const ST_COL={good:'#10b981',bad:'#fb923c',eq:'#60a5fa',neu:'#60a5fa',none:'#e5e7eb'};
+function sparkSVG(s,col,w=150,h=44){
+  if(s.length<2)return `<svg viewBox="0 0 ${w} ${h}" class="spk"><line x1="6" x2="${w-6}" y1="${h/2}" y2="${h/2}" stroke="#e5e7eb" stroke-dasharray="4 4"/>${s.length?`<circle cx="${w/2}" cy="${h/2}" r="4" fill="${col}"/>`:''}</svg>`;
+  const vs=s.map(x=>x.v),mn=Math.min(...vs),mx=Math.max(...vs),r=mx-mn||1,X=i=>6+i*(w-12)/(s.length-1),Y=v=>h-6-(v-mn)/r*(h-12);
+  const pts=s.map((x,i)=>`${X(i).toFixed(1)},${Y(x.v).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" class="spk"><polygon points="${X(0)},${h-2} ${pts} ${X(s.length-1)},${h-2}" fill="${col}" opacity=".12"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(s.length-1)}" cy="${Y(vs[vs.length-1])}" r="3.6" fill="#fff" stroke="${col}" stroke-width="2.2"/></svg>`;
+}
+/* --- tarjeta en Evolución (coach) / Progreso (atleta) --- */
+function measCardHTML(a,role){
+  const from=addDays(TODAY,-MEAS_DAYS),stats=MEAS.map(m=>measStat(a,m,from)),has=stats.some(x=>x.st!=='none'),co=role==='coach';
+  const rows=measRows(a.id,from).slice().reverse();
+  return `<div class="card meas-card">
+    <div class="meas-h"><div><b>📏 Medidas corporales</b> ${co?'':qm('medidas')}<div class="muted" style="font-size:12px">Últimos 3 meses · peso, % grasa, IMM y circunferencias</div></div><span style="flex:1"></span>
+      ${co?`<button class="btn soft sm" onclick="openMeasEntry('${a.id}')">${ic('plus',13)} Agregar medidas</button>`:''}
+      <button class="btn primary sm" onclick="openBodyView('${a.id}','${role}')">🧍 ${co?'Ver progreso físico':'Ver mi progreso físico'}</button></div>
+    ${has?`<div class="meas-grid">${stats.map(x=>`<div class="mg ${x.st}" title="${esc(x.m.tip||'')}"><div class="mg-l">${x.m.l}</div><div class="mg-v">${x.last!=null?fmtV(x.last):'—'}<small>${x.last!=null?' '+x.m.u:''}</small></div><div class="mg-d">${x.s.length>1?fmtD(x.d)+' '+x.m.u:x.s.length?'1 registro':'sin datos'}</div></div>`).join('')}</div>`
+      :`<div class="empty-state" style="padding:18px">${co?'Aún no hay medidas. Toca «Agregar medidas» para capturar las de hoy o las de los últimos 3 meses.':'Tu coach aún no registra tus medidas.'}</div>`}
+    ${co&&rows.length?`<details class="meas-hist"><summary>🗂️ Histórico de los últimos 3 meses (${rows.length})</summary><div class="scroll-x"><table class="tbl"><thead><tr><th>Fecha</th>${MEAS.map(m=>`<th>${m.l}</th>`).join('')}<th></th></tr></thead><tbody>
+      ${rows.map(e=>`<tr><td>${dmy(e.date)}</td>${MEAS.map(m=>`<td>${measVal(e,m.k)!=null?fmtV(measVal(e,m.k)):'<span class="muted">—</span>'}</td>`).join('')}<td><div class="row-acts"><button class="mini-btn" title="Editar" onclick="openMeasEntry('${a.id}','${e.id}')">${ic('edit',13)}</button><button class="mini-btn" title="Eliminar" onclick="delMeas('${e.id}')">${ic('trash',13)}</button></div></td></tr>`).join('')}
+    </tbody></table></div></details>`:''}
+  </div>`;
+}
+/* --- captura (coach / administrador) --- */
+function openMeasEntry(aid,eid){
+  const a=S.athletes.find(x=>x.id===aid);if(!a)return;const e=eid?S.evo.find(x=>x.id===eid):null,last=MEAS.reduce((o,m)=>{const s=measSeries(aid,m.k);o[m.k]=s.length?s[s.length-1].v:null;return o},{});
+  const min=addDays(TODAY,-MEAS_DAYS),val=k=>e&&measVal(e,k)!=null?measVal(e,k):'';
+  const fld=m=>`<div class="field mf"><label>${m.l} <small>${m.u}</small></label><input type="number" step="0.1" inputmode="decimal" id="ms_${m.k}" value="${esc(val(m.k))}" placeholder="${last[m.k]!=null?'antes '+fmtV(last[m.k]):''}"></div>`;
+  openModal(`<div class="modal"><div class="modal-h"><h3>📏 ${e?'Editar':'Agregar'} medidas · ${esc(a.name.split(' ')[0])}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
+    <div class="row" style="flex-wrap:wrap;align-items:end"><div class="field" style="max-width:210px"><label>Fecha de la medición</label><input type="date" id="ms_d" min="${min}" max="${TODAY}" value="${e?e.date:TODAY}"></div><div class="muted" style="font-size:12px;margin-bottom:12px">Puedes capturar mediciones de los últimos 3 meses (desde el ${dmy(min)}).</div></div>
+    <div class="ms-sec">⚖️ Composición corporal</div><div class="ms-grid">${MEAS.slice(0,3).map(fld).join('')}<div class="field mf"><label>Masa muscular <small>kg · opcional</small></label><input type="number" step="0.1" inputmode="decimal" id="ms_mm" placeholder="calcula el IMM" oninput="msCalcImm('${aid}')"><small id="ms_mmh">${a.height?`Con estatura ${a.height} cm`:'Agrega la estatura en su perfil para calcular'}</small></div></div>
+    <div class="ms-sec">📐 Circunferencias</div><div class="ms-grid">${MEAS.slice(3).map(fld).join('')}</div>
+    <div class="muted" style="font-size:12px">Deja vacío lo que no midas. Los valores en gris son la medición anterior.</div>
+  </div><div class="modal-f">${e?`<button class="btn danger sm" onclick="delMeas('${e.id}')">${ic('trash',13)} Eliminar</button><span style="flex:1"></span>`:''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMeas('${aid}','${eid||''}')">${ic('check',15)} Guardar</button></div></div>`);
+}
+function msCalcImm(aid){const a=S.athletes.find(x=>x.id===aid),mm=parseFloat(gv('ms_mm')),h=(+a.height||0)/100;if(mm&&h){document.getElementById('ms_imm').value=(mm/(h*h)).toFixed(1)}}
+function saveMeas(aid,eid){
+  const d=gv('ms_d');if(!d||d>TODAY||d<addDays(TODAY,-MEAS_DAYS)){toast('Elige una fecha de los últimos 3 meses');return}
+  const vals={};for(const m of MEAS){const raw=gv('ms_'+m.k).replace(',','.');if(raw==='')continue;const v=+raw;if(isNaN(v)||v<m.min||v>m.max){toast(`Revisa ${m.l}: entre ${m.min} y ${m.max} ${m.u}`);return}vals[m.k]=Math.round(v*10)/10}
+  const mm=parseFloat(gv('ms_mm'));if(mm)vals.mm=mm;
+  if(!Object.keys(vals).length){toast('Escribe al menos una medida');return}
+  let e=eid?S.evo.find(x=>x.id===eid):S.evo.find(x=>x.athleteId===aid&&!x.kind&&x.meas&&x.date===d);
+  if(e){if(eid)MEAS.forEach(m=>{delete e[m.k]});if(eid&&vals.gluteo!=null)delete e.cadera;Object.assign(e,vals,{date:d,meas:true,ts:Date.now(),by:ME.email})}
+  else S.evo.push({id:uid(),athleteId:aid,date:d,meas:true,by:ME.email,ts:Date.now(),...vals});
+  pushNotif(aid,`Tu coach registró tus medidas del ${dmy(d)} 📏`);closeModal();commit();toast('Medidas guardadas');
+}
+function delMeas(id){if(!confirm('¿Eliminar este registro de medidas?'))return;S.evo=S.evo.filter(e=>e.id!==id);closeModal();commit();toast('Registro eliminado')}
+/* --- vista visual con cuerpo anatómico --- */
+const BODY_PTS={hombro:{x:146,y:122,side:'L',ly:118},abdomen:{x:200,y:206,side:'L',ly:214},cintura:{x:170,y:252,side:'L',ly:300},pecho:{x:222,y:150,side:'R',ly:150},gluteo:{x:236,y:290,side:'R',ly:262},pierna:{x:224,y:362,side:'R',ly:362},pantorrilla:{x:222,y:470,side:'R',ly:470}};
+function bodySVG(st){
+  const c=k=>ST_COL[(st[k]||{}).st||'none'],sk='#f1dfd2',ln='#cbb5a6';
+  const lab=k=>{const p=BODY_PTS[k],x=st[k],L=p.side==='L',bx=L?6:282,tx=L?bx+4:bx+4,col=ST_COL[x.st];
+    return `<g class="bp-l"><path d="M${p.x} ${p.y} L${L?118:282} ${p.ly}" stroke="${col==='#e5e7eb'?'#cbd5e1':col}" stroke-width="1.6" fill="none" stroke-dasharray="${x.st==='none'?'3 3':'0'}"/><circle cx="${p.x}" cy="${p.y}" r="5" fill="#fff" stroke="${col==='#e5e7eb'?'#94a3b8':col}" stroke-width="2.6"/>
+      <rect x="${bx}" y="${p.ly-24}" width="112" height="46" rx="12" fill="#fff" stroke="${col==='#e5e7eb'?'#e5e7eb':col}" stroke-width="1.6"/>
+      <text x="${tx+6}" y="${p.ly-8}" font-size="11.5" font-weight="700" fill="#6b7280">${x.m.l}</text>
+      <text x="${tx+6}" y="${p.ly+12}" font-size="15" font-weight="800" fill="#111827">${x.last!=null?fmtV(x.last):'—'}<tspan font-size="10" font-weight="600" fill="#9ca3af"> ${x.last!=null?'cm':''}</tspan>${x.s.length>1?`<tspan dx="6" font-size="11.5" font-weight="800" fill="${col==='#e5e7eb'?'#6b7280':col}">${fmtD(x.d)}</tspan>`:''}</text></g>`};
+  return `<svg viewBox="0 0 400 560" class="body-svg" role="img" aria-label="Cuerpo con medidas">
+  <defs><radialGradient id="bgGlow" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ecfdf5"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+   <linearGradient id="skin" x1="0" x2="1"><stop offset="0" stop-color="#f6e6db"/><stop offset=".5" stop-color="#fbeee5"/><stop offset="1" stop-color="#f0dccd"/></linearGradient></defs>
+  <ellipse cx="200" cy="280" rx="170" ry="270" fill="url(#bgGlow)"/>
+  <ellipse cx="200" cy="540" rx="80" ry="10" fill="#e5e7eb" opacity=".7"/>
+  <!-- silueta -->
+  <g stroke="${ln}" stroke-width="1.4" fill="url(#skin)">
+   <ellipse cx="200" cy="56" rx="25" ry="31"/>
+   <path d="M188 84 L212 84 L214 104 L186 104 Z"/>
+   <path d="M128 132 Q122 182 116 236 Q113 262 110 292 Q108 318 112 334 L124 334 Q128 304 132 276 Q138 238 146 196 Z"/>
+   <path d="M272 132 Q278 182 284 236 Q287 262 290 292 Q292 318 288 334 L276 334 Q272 304 268 276 Q262 238 254 196 Z"/>
+   <ellipse cx="117" cy="346" rx="11" ry="15"/><ellipse cx="283" cy="346" rx="11" ry="15"/>
+   <path d="M152 104 Q200 92 248 104 Q266 112 270 136 L256 200 Q248 236 246 262 L154 262 Q152 236 144 200 L130 136 Q134 112 152 104 Z"/>
+   <path d="M154 262 L246 262 Q252 286 248 308 L152 308 Q148 286 154 262 Z"/>
+   <path d="M152 306 L198 306 L196 420 Q194 432 182 432 L170 432 Q160 430 158 418 Q150 360 152 306 Z"/>
+   <path d="M202 306 L248 306 Q250 360 242 418 Q240 430 230 432 L218 432 Q206 432 204 420 Z"/>
+   <path d="M160 436 L194 436 Q196 480 190 516 L170 516 Q160 478 160 436 Z"/>
+   <path d="M206 436 L240 436 Q240 478 230 516 L210 516 Q204 480 206 436 Z"/>
+   <path d="M168 516 L192 516 L194 532 L160 534 Z"/><path d="M208 516 L232 516 L240 534 L206 532 Z"/>
+  </g>
+  <!-- músculos medidos, coloreados según el progreso -->
+  <g opacity=".86" stroke="#ffffff" stroke-width="1.2">
+   <ellipse cx="146" cy="126" rx="21" ry="17" fill="${c('hombro')}"/><ellipse cx="254" cy="126" rx="21" ry="17" fill="${c('hombro')}"/>
+   <path d="M156 118 Q178 110 198 116 L198 168 Q176 174 160 160 Q152 140 156 118 Z" fill="${c('pecho')}"/><path d="M244 118 Q222 110 202 116 L202 168 Q224 174 240 160 Q248 140 244 118 Z" fill="${c('pecho')}"/>
+   <rect x="178" y="174" width="44" height="66" rx="12" fill="${c('abdomen')}"/>
+   <path d="M156 238 L178 236 L178 262 L156 262 Z" fill="${c('cintura')}"/><path d="M244 238 L222 236 L222 262 L244 262 Z" fill="${c('cintura')}"/><rect x="178" y="244" width="44" height="18" rx="5" fill="${c('cintura')}"/>
+   <path d="M156 266 L244 266 Q250 286 246 304 L154 304 Q150 286 156 266 Z" fill="${c('gluteo')}"/>
+   <path d="M156 312 L196 312 L194 404 Q186 414 170 410 Q156 370 156 312 Z" fill="${c('pierna')}"/><path d="M244 312 L204 312 L206 404 Q214 414 230 410 Q244 370 244 312 Z" fill="${c('pierna')}"/>
+   <ellipse cx="177" cy="470" rx="15" ry="32" fill="${c('pantorrilla')}"/><ellipse cx="223" cy="470" rx="15" ry="32" fill="${c('pantorrilla')}"/>
+  </g>
+  <g stroke="#ffffff" stroke-width="1.6" opacity=".9" fill="none"><line x1="200" y1="178" x2="200" y2="238"/><line x1="180" y1="196" x2="220" y2="196"/><line x1="180" y1="218" x2="220" y2="218"/></g>
+  ${Object.keys(BODY_PTS).map(lab).join('')}
+  </svg>`;
+}
+function openBodyView(aid,role){
+  const a=S.athletes.find(x=>x.id===aid);if(!a)return;S.ui.bvA=aid;S.ui.bvR=role;const rng=S.ui.bvAll?null:addDays(TODAY,-MEAS_DAYS);
+  const st={};MEAS.forEach(m=>st[m.k]=measStat(a,m,rng));const me=role!=='coach',fn=esc(a.name.split(' ')[0]);
+  const ch=MEAS.map(m=>st[m.k]).filter(x=>x.s.length>1&&Math.abs(x.d)>=0.1&&x.st!=='eq');
+  const good=ch.filter(x=>x.st==='good').sort((p,q)=>Math.abs(q.d)-Math.abs(p.d)),bad=ch.filter(x=>x.st==='bad');
+  const verb=x=>`${x.d<0?'bajó':'subió'} <b>${fmtV(Math.abs(x.d))} ${x.m.u}</b> de ${x.m.k==='grasa'?'grasa':x.m.k==='imm'?'IMM':x.m.l.toLowerCase()}`;
+  const summary=!ch.length?(MEAS.some(m=>st[m.k].s.length)?'Aún no hay suficientes mediciones para comparar. Con la próxima verás tu avance aquí.':'Todavía no hay medidas registradas.')
+    :`${good.length?`✅ ${me?'Tu cuerpo':fn} ${good.slice(0,3).map(verb).join(', ')}.`:''} ${bad.length?`<br>⚠️ Por vigilar: ${bad.slice(0,2).map(verb).join(', ')}.`:''}`;
+  const top=MEAS.slice(0,3).map(m=>{const x=st[m.k],col=ST_COL[x.st];return `<div class="bv-top ${x.st}"><div class="l">${m.l}${m.k==='imm'?' '+qm('imm'):''}</div><div class="v">${x.last!=null?fmtV(x.last):'—'}<small> ${m.u}</small></div><div class="d" style="color:${x.st==='none'?'#9ca3af':col}">${x.s.length>1?fmtD(x.d)+' '+m.u:x.s.length?'1 registro':'sin datos'}</div>${sparkSVG(x.s,x.st==='none'?'#cbd5e1':col,120,34)}</div>`}).join('');
+  openModal(`<div class="modal xl bv-modal"><div class="modal-h"><h3>🧍 ${me?'Mi progreso físico':'Progreso físico · '+fn}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
+    <div class="bv-bar"><div class="seg-sm"><button class="${S.ui.bvAll?'':'on'}" onclick="S.ui.bvAll=false;openBodyView('${aid}','${role}')">Últimos 3 meses</button><button class="${S.ui.bvAll?'on':''}" onclick="S.ui.bvAll=true;openBodyView('${aid}','${role}')">Todo</button></div>${role==='coach'?`<button class="btn soft sm" onclick="openMeasEntry('${aid}')">${ic('plus',13)} Agregar medidas</button>`:''}</div>
+    <div class="bv-sum">${summary}</div>
+    <div class="bv-wrap"><div class="bv-body">${bodySVG(st)}<div class="bv-leg"><span><i style="background:${ST_COL.good}"></i>Avanzando hacia el objetivo</span><span><i style="background:${ST_COL.bad}"></i>En sentido contrario</span><span><i style="background:${ST_COL.eq}"></i>Sin cambio</span><span><i style="background:#e5e7eb"></i>Sin datos</span></div></div>
+      <div class="bv-side"><div class="bv-tops">${top}</div>
+        <div class="bv-list">${MEAS.slice(3).map(m=>{const x=st[m.k],col=ST_COL[x.st];return `<div class="bv-row ${x.st}"><span class="dot" style="background:${col}"></span><span class="n">${m.l}</span>${sparkSVG(x.s,x.st==='none'?'#cbd5e1':col,110,30)}<span class="v">${x.last!=null?fmtV(x.last)+' cm':'—'}</span><span class="d" style="color:${x.st==='none'?'#9ca3af':col}">${x.s.length>1?fmtD(x.d):''}</span></div>`}).join('')}</div>
+        <div class="muted" style="font-size:11.5px;margin-top:8px">Se compara la primera y la última medición ${S.ui.bvAll?'registradas':'de los últimos 3 meses'}. ${me?'Las medidas las registra tu coach.':''}</div></div></div>
+  </div></div>`);
+}
+
 function evoHTML(aid,role){
   const es=S.evo.filter(e=>e.athleteId===aid&&!e.kind).sort((a,b)=>a.date.localeCompare(b.date));
   const w=es.filter(e=>e.peso!=null);
@@ -3372,6 +3543,8 @@ const HELP={
   megaserie:{t:'¿Qué es una megaserie?',b:'Son 4 o más ejercicios seguidos, sin descanso, como un circuito. Descansas solo cuando terminas toda la vuelta.'},
   racha:{t:'Tu racha',b:'Cuántos días de entrenamiento seguidos has cumplido con todo lo que te tocaba.'},
   actividad:{t:'Otra actividad',b:'Si hiciste algo fuera de tu plan (correr, bici, un partido), regístralo para que también cuente en tu carga de la semana.'},
+  medidas:{t:'Tus medidas',b:'Tu coach registra tu peso, % de grasa, IMM y circunferencias. Verde = vas hacia tu objetivo; naranja = va en sentido contrario; azul = sin cambio.'},
+  imm:{t:'¿Qué es el IMM?',b:'Índice de masa muscular: los kilos de músculo divididos entre tu estatura al cuadrado. Si sube, ganaste músculo.'},
   peso:{t:'Peso corporal',b:'Pésate en ayunas, a la misma hora y en la misma báscula para que tus datos se puedan comparar.'},
   periodo_dia:{t:'Día de tu periodo',b:'Toca el día de tu periodo en el que vas (día 1 = el primer día de sangrado). Con eso calculamos tu fase y tu coach puede ajustar la intensidad, por ejemplo bajar un poco el peso los primeros días si lo necesitas. Cuando termine, toca «Ya terminó». Solo lo ven tú y tu coach.'},
   fce:{t:'¿Qué es la FCE?',b:'Es tu frecuencia cardiaca de entrenamiento: las pulsaciones por minuto en las que debes mantenerte durante el cardio. Se calcula con tu edad y tu frecuencia cardiaca en reposo (fórmula de Karvonen). Zona 1 = muy suave … Zona 5 = máxima. Si usas reloj o banda, procura quedarte en ese rango.'},
