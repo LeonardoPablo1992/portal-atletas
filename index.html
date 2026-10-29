@@ -2747,46 +2747,65 @@ function saveMeas(aid,eid){
 }
 function delMeas(id){if(!confirm('¿Eliminar este registro de medidas?'))return;S.evo=S.evo.filter(e=>e.id!==id);closeModal();commit();toast('Registro eliminado')}
 /* --- vista visual con cuerpo anatómico --- */
-const BODY_PTS={hombro:{x:146,y:122,side:'L',ly:118},abdomen:{x:200,y:206,side:'L',ly:214},cintura:{x:170,y:252,side:'L',ly:300},pecho:{x:222,y:150,side:'R',ly:150},gluteo:{x:236,y:290,side:'R',ly:262},pierna:{x:224,y:362,side:'R',ly:362},pantorrilla:{x:222,y:470,side:'R',ly:470}};
+/* Lámina anatómica (vista anterior), monocromática. Coordenadas del cuerpo en 0–400; se desplaza +20 dentro de un lienzo de 440. */
+const BODY_PTS={hombro:{x:118,y:128,side:'L',ly:100,cx:200,rx:82,ry:7},cintura:{x:150,y:214,side:'L',ly:186,cx:200,rx:50,ry:6},abdomen:{x:154,y:242,side:'L',ly:266,cx:200,rx:46,ry:6},
+  pecho:{x:262,y:150,side:'R',ly:142,cx:200,rx:62,ry:7},gluteo:{x:255,y:286,side:'R',ly:250,cx:200,rx:55,ry:7},pierna:{x:257,y:334,side:'R',ly:348,cx:230,rx:27,ry:5},pantorrilla:{x:252,y:452,side:'R',ly:452,cx:228,rx:24,ry:5}};
+const ANAT_L=[ /* mitad derecha del sujeto (izquierda en pantalla); se refleja */
+ 'M184 92 Q168 102 146 108 L158 112 Q176 106 192 104 Z', /* trapecio */
+ 'M188 80 Q186 94 194 110 L198 110 Q192 94 190 80 Z', /* esternocleidomastoideo */
+ 'M146 106 Q122 110 118 140 Q117 158 122 172 Q134 150 150 138 Q157 122 158 112 Z', /* deltoides */
+ 'M158 112 Q178 107 199 111 L199 158 Q186 168 168 164 Q150 158 141 148 Q148 128 158 112 Z', /* pectoral mayor */
+ 'M146 162 Q150 200 154 232 Q158 258 176 272 L183 276 Q177 258 177 246 L176 168 Q160 168 146 162 Z', /* oblicuo externo */
+ 'M146 164 Q154 166 162 172 Q156 176 148 174 Z','M147 177 Q156 181 164 187 Q156 191 149 187 Z','M148 190 Q156 195 164 201 Q156 203 150 199 Z', /* serrato */
+ 'M178 168 Q188 165 198.5 166 L198.5 190 L178 192 Q176 180 178 168 Z','M178 196 L198.5 194 L198.5 216 L178 218 Q176 206 178 196 Z',
+ 'M178 222 L198.5 220 L198.5 242 L179 244 Q176 232 178 222 Z','M179 248 L198.5 246 L198.5 288 Q190 284 184 272 Q179 260 179 248 Z', /* recto abdominal */
+ 'M118 150 Q108 172 108 200 Q108 220 112 234 L114 234 Q110 212 112 190 Q114 168 122 160 Z', /* tríceps */
+ 'M124 160 Q136 176 134 204 Q132 224 126 236 L114 234 Q110 212 112 190 Q116 168 124 160 Z', /* bíceps */
+ 'M112 236 Q100 256 100 284 Q100 302 104 320 L112 320 Q112 290 120 266 Q126 250 126 238 Z', /* braquiorradial */
+ 'M126 238 Q132 256 126 280 Q120 302 116 320 L112 320 Q112 290 120 266 Q126 250 126 238 Z', /* flexores */
+ 'M102 320 Q94 338 98 354 Q104 364 112 360 Q119 346 117 320 Z', /* mano */
+ 'M150 254 Q144 272 146 300 L157 300 Q160 276 156 254 Z', /* tensor de la fascia lata */
+ 'M146 300 Q142 340 150 380 Q156 396 164 400 Q166 366 164 330 Q162 306 157 292 Z', /* vasto lateral */
+ 'M160 290 Q170 286 176 296 Q182 336 176 386 Q170 394 166 392 Q168 360 166 326 Q164 304 160 290 Z', /* recto femoral */
+ 'M176 290 Q190 292 198 300 L197 330 Q192 342 184 350 Q182 318 176 290 Z', /* aductores */
+ 'M178 346 Q194 360 192 388 Q186 402 174 402 Q178 380 178 346 Z', /* vasto medial */
+ 'M158 276 L165 274 Q184 330 192 392 L186 394 Q176 330 158 276 Z', /* sartorio */
+ 'M152 386 Q160 400 170 402 Q186 402 192 390 Q197 408 188 422 L156 422 Q148 406 152 386 Z', /* rodilla */
+ 'M163 408 Q163 397 172 396 Q181 397 181 408 Q180 418 172 420 Q164 418 163 408 Z', /* rótula */
+ 'M156 416 Q146 442 150 472 Q154 488 162 494 Q162 456 166 420 Z', /* gastrocnemio lateral */
+ 'M166 418 Q174 414 180 420 Q180 464 175 508 L168 508 Q164 462 166 418 Z', /* tibial anterior */
+ 'M180 418 Q196 438 194 468 Q190 486 182 494 Q180 458 180 418 Z', /* gastrocnemio medial */
+ 'M166 508 L180 508 Q182 520 188 528 Q184 538 162 538 Q154 534 160 524 Q165 516 166 508 Z']; /* pie */
+const ANAT_FIB=['M196 120 Q170 124 152 134','M196 134 Q172 138 149 146','M196 148 Q176 152 158 157','M140 112 Q130 130 127 158','M150 117 Q140 136 136 148',
+ 'M122 172 Q125 198 120 226','M154 302 Q150 338 157 378','M170 298 Q174 336 171 382','M108 258 Q106 284 108 310','M156 432 Q154 458 158 482','M188 432 Q190 456 186 480'];
 function bodySVG(st){
-  const c=k=>'#c4c9d1',ln='#b8bec7';
-  const lab=k=>{const p=BODY_PTS[k],x=st[k],L=p.side==='L',bx=L?6:282,tx=L?bx+4:bx+4,col=ST_COL[x.st];
-    return `<g class="bp-l"><path d="M${p.x} ${p.y} L${L?118:282} ${p.ly}" stroke="${col==='#e5e7eb'?'#cbd5e1':col}" stroke-width="1.6" fill="none" stroke-dasharray="${x.st==='none'?'3 3':'0'}"/><circle cx="${p.x}" cy="${p.y}" r="5" fill="#fff" stroke="${col==='#e5e7eb'?'#94a3b8':col}" stroke-width="2.6"/>
-      <rect x="${bx}" y="${p.ly-24}" width="112" height="46" rx="12" fill="#fff" stroke="${col==='#e5e7eb'?'#e5e7eb':col}" stroke-width="1.6"/>
-      <text x="${tx+6}" y="${p.ly-8}" font-size="11.5" font-weight="700" fill="#6b7280">${x.m.l}</text>
-      <text x="${tx+6}" y="${p.ly+12}" font-size="15" font-weight="800" fill="#111827">${x.last!=null?fmtV(x.last):'—'}<tspan font-size="10" font-weight="600" fill="#9ca3af"> ${x.last!=null?'cm':''}</tspan>${x.s.length>1?`<tspan dx="6" font-size="11.5" font-weight="800" fill="${col==='#e5e7eb'?'#6b7280':col}">${fmtD(x.d)}</tspan>`:''}</text></g>`};
-  return `<svg viewBox="0 0 400 560" class="body-svg" role="img" aria-label="Cuerpo con medidas">
-  <defs><radialGradient id="bgGlow" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#f3f4f6"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-   <linearGradient id="skin" x1="0" x2="1"><stop offset="0" stop-color="#e5e7eb"/><stop offset=".5" stop-color="#f3f4f6"/><stop offset="1" stop-color="#e2e5e9"/></linearGradient></defs>
-  <ellipse cx="200" cy="280" rx="170" ry="270" fill="url(#bgGlow)"/>
-  <ellipse cx="200" cy="540" rx="80" ry="10" fill="#e5e7eb" opacity=".7"/>
-  <!-- silueta -->
-  <g stroke="${ln}" stroke-width="1.4" fill="url(#skin)">
-   <ellipse cx="200" cy="56" rx="25" ry="31"/>
-   <path d="M188 84 L212 84 L214 104 L186 104 Z"/>
-   <path d="M128 132 Q122 182 116 236 Q113 262 110 292 Q108 318 112 334 L124 334 Q128 304 132 276 Q138 238 146 196 Z"/>
-   <path d="M272 132 Q278 182 284 236 Q287 262 290 292 Q292 318 288 334 L276 334 Q272 304 268 276 Q262 238 254 196 Z"/>
-   <ellipse cx="117" cy="346" rx="11" ry="15"/><ellipse cx="283" cy="346" rx="11" ry="15"/>
-   <path d="M152 104 Q200 92 248 104 Q266 112 270 136 L256 200 Q248 236 246 262 L154 262 Q152 236 144 200 L130 136 Q134 112 152 104 Z"/>
-   <path d="M154 262 L246 262 Q252 286 248 308 L152 308 Q148 286 154 262 Z"/>
-   <path d="M152 306 L198 306 L196 420 Q194 432 182 432 L170 432 Q160 430 158 418 Q150 360 152 306 Z"/>
-   <path d="M202 306 L248 306 Q250 360 242 418 Q240 430 230 432 L218 432 Q206 432 204 420 Z"/>
-   <path d="M160 436 L194 436 Q196 480 190 516 L170 516 Q160 478 160 436 Z"/>
-   <path d="M206 436 L240 436 Q240 478 230 516 L210 516 Q204 480 206 436 Z"/>
-   <path d="M168 516 L192 516 L194 532 L160 534 Z"/><path d="M208 516 L232 516 L240 534 L206 532 Z"/>
+  const O=20,ok=k=>(st[k]||{}).st||'none',colOf=k=>ok(k)==='none'?'#94a3b8':ST_COL[ok(k)];
+  const mir=s=>`<g transform="matrix(-1 0 0 1 400 0)">${s}</g><g>${s}</g>`;
+  const center=`<path d="M200 20 C185 20 176 33 176 50 C176 67 184 80 200 85 C216 80 224 67 224 50 C224 33 215 20 200 20 Z"/><path d="M186 72 L214 72 Q213 92 220 104 L180 104 Q187 92 186 72 Z"/>`;
+  const ears=`<ellipse cx="176.5" cy="53" rx="3.5" ry="7"/><ellipse cx="223.5" cy="53" rx="3.5" ry="7"/>`;
+  const shapes=ANAT_L.map(d=>`<path d="${d}"/>`).join('');
+  const tape=k=>{const p=BODY_PTS[k],c=colOf(k);return `<ellipse cx="${p.cx}" cy="${p.y}" rx="${p.rx}" ry="${p.ry}" fill="none" stroke="#fff" stroke-width="4" opacity=".9"/><ellipse cx="${p.cx}" cy="${p.y}" rx="${p.rx}" ry="${p.ry}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="5 3"/>`};
+  const lab=k=>{const p=BODY_PTS[k],x=st[k],L=p.side==='L',bx=L?4:328,ax=p.x+O,c=colOf(k),ex=L?112:328,u=x.m.u;
+    return `<g class="bp-l"><path d="M${ax} ${p.y} L${ex} ${p.ly}" stroke="#fff" stroke-width="4" fill="none"/><path d="M${ax} ${p.y} L${ex} ${p.ly}" stroke="${c}" stroke-width="1.3" fill="none"/><circle cx="${ax}" cy="${p.y}" r="3.6" fill="${c}" stroke="#fff" stroke-width="1.6"/>
+      <rect x="${bx}" y="${p.ly-23}" width="108" height="46" rx="10" fill="#fff" stroke="${x.st==='none'?'#e5e7eb':c}" stroke-width="1.4"/><rect x="${L?bx+102:bx}" y="${p.ly-17}" width="6" height="34" rx="3" fill="${c}" opacity="${x.st==='none'?.25:.9}"/>
+      <text x="${bx+(L?10:14)}" y="${p.ly-7}" font-size="10.5" font-weight="700" fill="#6b7280" letter-spacing=".4">${x.m.l.toUpperCase()}</text>
+      <text x="${bx+(L?10:14)}" y="${p.ly+13}" font-size="15" font-weight="800" fill="#111827">${x.last!=null?fmtV(x.last):'—'}<tspan font-size="10" font-weight="600" fill="#9ca3af"> ${x.last!=null?u:''}</tspan>${x.s.length>1?`<tspan dx="5" font-size="11.5" font-weight="800" fill="${c}">${fmtD(x.d)}</tspan>`:''}</text></g>`};
+  return `<svg viewBox="0 0 440 572" class="body-svg" role="img" aria-label="Lámina anatómica con circunferencias">
+  <defs><pattern id="anGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#eef1f4" stroke-width="1"/></pattern>
+   <linearGradient id="anMus" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#cfd4db"/><stop offset=".45" stop-color="#dfe3e8"/><stop offset="1" stop-color="#c3c9d1"/></linearGradient>
+   <radialGradient id="anFloor" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#cbd5e1" stop-opacity=".6"/><stop offset="1" stop-color="#cbd5e1" stop-opacity="0"/></radialGradient></defs>
+  <rect width="440" height="572" fill="url(#anGrid)"/>
+  <line x1="220" y1="14" x2="220" y2="548" stroke="#e2e6eb" stroke-dasharray="2 4"/>
+  <ellipse cx="220" cy="543" rx="78" ry="9" fill="url(#anFloor)"/>
+  <g transform="translate(${O} 0)">
+   <g fill="#e8ebef" stroke="#e8ebef" stroke-width="7" stroke-linejoin="round">${center}${ears}${mir(shapes)}</g>
+   <g fill="url(#anMus)" stroke="#9aa3ae" stroke-width=".9" stroke-linejoin="round">${center}${ears}${mir(shapes)}</g>
+   <g fill="none" stroke="#a9b1bb" stroke-width=".7" opacity=".75" stroke-linecap="round">${mir(ANAT_FIB.map(d=>`<path d="${d}"/>`).join(''))}
+    <path d="M200 166 V288" stroke="#9aa3ae" stroke-width="1.1"/><path d="M160 110 Q178 103 198 108 M240 110 Q222 103 202 108"/><circle cx="200" cy="244" r="1.8" fill="#9aa3ae"/></g>
+   ${Object.keys(BODY_PTS).map(tape).join('')}
   </g>
-  <!-- músculos medidos, coloreados según el progreso -->
-  <g opacity=".86" stroke="#ffffff" stroke-width="1.2">
-   <ellipse cx="146" cy="126" rx="21" ry="17" fill="${c('hombro')}"/><ellipse cx="254" cy="126" rx="21" ry="17" fill="${c('hombro')}"/>
-   <path d="M156 118 Q178 110 198 116 L198 168 Q176 174 160 160 Q152 140 156 118 Z" fill="${c('pecho')}"/><path d="M244 118 Q222 110 202 116 L202 168 Q224 174 240 160 Q248 140 244 118 Z" fill="${c('pecho')}"/>
-   <rect x="178" y="174" width="44" height="66" rx="12" fill="${c('abdomen')}"/>
-   <path d="M156 238 L178 236 L178 262 L156 262 Z" fill="${c('cintura')}"/><path d="M244 238 L222 236 L222 262 L244 262 Z" fill="${c('cintura')}"/><rect x="178" y="244" width="44" height="18" rx="5" fill="${c('cintura')}"/>
-   <path d="M156 266 L244 266 Q250 286 246 304 L154 304 Q150 286 156 266 Z" fill="${c('gluteo')}"/>
-   <path d="M156 312 L196 312 L194 404 Q186 414 170 410 Q156 370 156 312 Z" fill="${c('pierna')}"/><path d="M244 312 L204 312 L206 404 Q214 414 230 410 Q244 370 244 312 Z" fill="${c('pierna')}"/>
-   <ellipse cx="177" cy="470" rx="15" ry="32" fill="${c('pantorrilla')}"/><ellipse cx="223" cy="470" rx="15" ry="32" fill="${c('pantorrilla')}"/>
-  </g>
-  <g stroke="#ffffff" stroke-width="1.6" opacity=".9" fill="none"><line x1="200" y1="178" x2="200" y2="238"/><line x1="180" y1="196" x2="220" y2="196"/><line x1="180" y1="218" x2="220" y2="218"/></g>
   ${Object.keys(BODY_PTS).map(lab).join('')}
+  <text x="220" y="566" text-anchor="middle" font-size="10" font-weight="700" fill="#9ca3af" letter-spacing="1.6">VISTA ANTERIOR · CIRCUNFERENCIAS</text>
   </svg>`;
 }
 function openBodyView(aid,role){
