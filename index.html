@@ -6,7 +6,7 @@
 <title>ProTrainerPlus · Head Coach Leonardo Pablo</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --green:#16a34a;--green-d:#15803d;--green-50:#f0fdf4;--green-100:#dcfce7;--green-200:#bbf7d0;
@@ -879,7 +879,7 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 <div id="videoRoot"></div>
 <div id="toasts"></div>
 
-<script src="/supabase.js"></script>
+<script src="supabase.js"></script>
 <script>window.supabase||document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>')</script>
 <script>
 /* =========================================================
@@ -1073,13 +1073,16 @@ const CONFIG={
   SUPABASE_PROXY:'https://headcoachleonardopablo.com/sb',
   V2_URL:'https://atletas.headcoachleonardopablo.com/'
 };
-const SBNET={proxy:false,ok:false};try{SBNET.proxy=sessionStorage.getItem('sb-proxy')==='1'}catch(e){}
+/* Copia alterna en headcoachleonardopablo.com/atletas/ (Netlify): ahí todo va por el mismo dominio, sin depender de github.io ni de supabase.co */
+const ALT_HOST=/(^|\.)headcoachleonardopablo\.com$/.test(location.hostname)&&!/^atletas\./.test(location.hostname);
+if(ALT_HOST){CONFIG.SUPABASE_PROXY=location.origin+'/sb';CONFIG.V2_URL=location.origin+location.pathname.replace(/[^/]*$/,'')}
+const SBNET={proxy:ALT_HOST,ok:false};try{if(sessionStorage.getItem('sb-proxy')==='1')SBNET.proxy=true}catch(e){}
 function sbURL(u){return SBNET.proxy&&CONFIG.SUPABASE_PROXY&&typeof u==='string'?u.split(CONFIG.SUPABASE_URL).join(CONFIG.SUPABASE_PROXY):u}
 async function sbFetch(input,init){
   init=init||{};const url=typeof input==='string'?input:(input&&input.url)||String(input);
   if(SBNET.proxy)return fetch(sbURL(url),init);
   if(SBNET.ok||!CONFIG.SUPABASE_PROXY)return fetch(url,init);
-  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),7000);
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),5000);
   if(init.signal)init.signal.addEventListener('abort',()=>ctl.abort());
   try{const r=await fetch(url,{...init,signal:ctl.signal});clearTimeout(t);SBNET.ok=true;return r}
   catch(e){clearTimeout(t);if(init.signal&&init.signal.aborted)throw e;SBNET.proxy=true;try{sessionStorage.setItem('sb-proxy','1')}catch(_){}return fetch(sbURL(url),init)}
@@ -1348,7 +1351,7 @@ function demoClient(){
 }
 function demoSetup(){
   DEMO.client=demoClient();window.supabase={createClient:()=>DEMO.client};
-  CONFIG.V2_URL=location.origin+'/#demo='+DEMO.key;document.title='Demo · ProTrainerPlus';document.body.classList.add('is-demo');
+  CONFIG.V2_URL=location.origin+location.pathname+'#demo='+DEMO.key;document.title='Demo · ProTrainerPlus';document.body.classList.add('is-demo');
   const op=document.getElementById('oldPortal');if(op)op.remove();
   if(!document.getElementById('demoBar'))document.body.insertAdjacentHTML('afterbegin',`<div id="demoBar" class="demo-bar">${ic('info',14)}<span><b>Modo demo</b> · datos de ejemplo que solo se guardan en este navegador</span><button type="button" onclick="demoReset()">Reiniciar demo</button></div>`);
 }
@@ -1361,7 +1364,7 @@ function demoLoginHTML(msg){
     <p class="muted" style="margin:0 0 16px;font-size:13px">Entra con el correo y la contraseña de demo que te compartieron.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="username" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar al demo</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">Todo lo que hagas aquí son datos de ejemplo y no sale de este navegador. <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a> · <a href="#" onclick="event.preventDefault();demoReset()" style="color:var(--green-d)">Reiniciar demo</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">Todo lo que hagas aquí son datos de ejemplo y no sale de este navegador. <a href="aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a> · <a href="#" onclick="event.preventDefault();demoReset()" style="color:var(--green-d)">Reiniciar demo</a></p></div></div>`;
 }
 function seedDemo(){
   /* Demo en limpio: sin clientes. Solo se dejan la biblioteca y las plantillas base, sin nombres de atletas reales. */
@@ -1477,7 +1480,7 @@ function renderSignup(msg){
       <div class="field"><label>Nombre completo</label><input id="su_n" required autocomplete="name" value="${esc(window.__su?.n||'')}"></div>
       <div class="field"><label>Correo</label><input id="su_e" type="email" required autocomplete="email" inputmode="email" value="${esc(window.__su?.e||'')}"></div>
       <div class="field"><label>Contraseña (mínimo 8 caracteres)</label><input id="su_p" type="password" required minlength="8" autocomplete="new-password"></div>
-      <label class="chk" style="font-size:12.5px;margin:4px 0 12px"><input type="checkbox" id="su_ok" required> <span>Leí el <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">aviso de privacidad</a>${role==='coach'?' y entiendo que al terminar la prueba de 14 días se activará el cobro de mi suscripción':''}.</span></label>
+      <label class="chk" style="font-size:12.5px;margin:4px 0 12px"><input type="checkbox" id="su_ok" required> <span>Leí el <a href="aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">aviso de privacidad</a>${role==='coach'?' y entiendo que al terminar la prueba de 14 días se activará el cobro de mi suscripción':''}.</span></label>
       <button class="btn primary full" id="su_b">${role==='coach'?'Crear mi cuenta de coach':'Crear mi cuenta'}</button></form>
     <p style="font-size:12px;margin:14px 0 0" class="muted">¿Ya tienes cuenta? <a href="#" onclick="event.preventDefault();renderLoginV2()" style="color:var(--green-d)">Entrar</a></p></div></div>`;
 }
@@ -1538,7 +1541,7 @@ async function boot(){
   const hp=new URLSearchParams(location.hash.replace(/^#/,'')),isRecovery=hp.get('type')==='recovery',linkErr=hp.get('error_description')||hp.get('error')||'',linkCode=hp.get('error_code')||'';
   if(linkErr)history.replaceState(null,'',location.pathname+location.search);
   const wantSignup=/crear-cuenta/.test(location.hash);if(wantSignup)history.replaceState(null,'',location.pathname+location.search);
-  if(!window.supabase){document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">No se pudo cargar la conexión. Revisa tu internet y recarga la página.</div>';return}
+  if(!window.supabase){document.getElementById('app').innerHTML=netHelpHTML();return}
   SB=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{global:{fetch:sbFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
   try{const {data}=await SB.auth.getSession();
     if(linkErr&&!data.session)return renderLinkError(linkCode,linkErr);
@@ -1560,7 +1563,7 @@ function renderLoginV2(msg){
     <h2 style="margin:0 0 4px">Entrar</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Entra con tu correo y contraseña.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="email" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="#" onclick="event.preventDefault();renderForgot()" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="#" onclick="event.preventDefault();renderSignup()" style="color:var(--green-d);font-weight:700">Crear cuenta</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="#" onclick="event.preventDefault();renderForgot()" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="#" onclick="event.preventDefault();renderSignup()" style="color:var(--green-d);font-weight:700">Crear cuenta</a> · <a href="aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div>${ALT_HOST?'':`<p class="muted" style="font-size:12px;text-align:center;margin:12px 0 0">📶 ¿No carga bien con datos móviles? <a href="${ALT_URL}" style="color:var(--green-d);font-weight:700">Abrir versión alterna</a></p>`}</div>`;
 }
 async function doLogin(){const b=document.getElementById('lg_b');b.disabled=true;b.textContent='Entrando…';
   const {data,error}=await SB.auth.signInWithPassword({email:gv('lg_e').toLowerCase(),password:document.getElementById('lg_p').value});
@@ -1645,7 +1648,7 @@ function scheduleAthletePlanAuto(aid,start,weeks=4){
 function autoSchedule(aid){const a=S.athletes.find(x=>x.id===aid),op=OLDPLANS[aid],start=op&&op.created_at?fmt(new Date(op.created_at)):TODAY;
   const n=scheduleAthletePlanAuto(aid,start);closeModal();S.ui.month=start.slice(0,7);commit();toast(`${n} sesiones programadas para ${a.name.split(' ')[0]}`)}
 function setPlanPhase(aid,ph){const a=S.athletes.find(x=>x.id===aid);a.plan.phase=ph;S.ui.pv={id:a.plan.id,day:S.ui.pv?S.ui.pv.day:0,phase:ph};const t=S.plans.find(x=>x.id===a.plan.tplId);if(t)t.phase=ph;commit();openCoachPlan(aid);toast(`${a.name.split(' ')[0]} ahora va en la fase ${ph+1}`)}
-function oldPlanCard(a){if(!a.plan||a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="/"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
+function oldPlanCard(a){if(!a.plan||a.plan.scheduled)return '';if(a.plan)return `<div class="oldplan" role="button" style="cursor:pointer" onclick="S.ui.athTab='plan';commit()"><span class="ti">${ic('layers',17)}</span><span style="flex:1"><b>Mi plan de entrenamiento</b><br><span class="muted" style="font-size:12px">${a.plan.days.length} rutinas · toca para ver y entrenar</span></span>›</div>`;const p=OLDPLANS[a.id];return p?`<a class="oldplan" href="./"><span class="ti">${ic('file',17)}</span><span style="flex:1"><b>${esc(p.title||'Tu plan de entrenamiento')}</b><br><span class="muted" style="font-size:12px">Tu plan de siempre sigue disponible en el portal</span></span>${ic('ext',15)}</a>`:''}
 
 const curA=()=>S.athletes.find(a=>a.id===S.ui.athleteId)||S.athletes[0];
 const tasksOn=(aid,ds)=>S.tasks.filter(t=>t.athleteId===aid&&t.date===ds);
@@ -1680,7 +1683,7 @@ function setMode(m){S.ui.mode=m;commit()}
    Aceptar = continúa · Cancelar = no avanza, puede salir.
    Registro de la aceptación: pt_evo kind 'privacy' (versión, fecha, sensibles, secundarias).
 ========================================================= */
-const PRIVACY={version:'1.0',date:'29 de octubre de 2026',url:'/aviso-de-privacidad/'};
+const PRIVACY={version:'1.0',date:'29 de octubre de 2026',url:'aviso-de-privacidad/'};
 const PRIV={cancel:false,full:'',loading:false,open:false};
 const privacyRec=aid=>S&&S.evo.find(e=>e.kind==='privacy'&&e.athleteId===aid&&e.version===PRIVACY.version&&e.accepted)||null;
 const privacyBlocked=()=>!!(S&&ME&&!IS_COACH&&!privacyRec(ME.email));
@@ -2053,11 +2056,11 @@ function delSetupModal(role){
   openModal(`<div class="modal sm del-modal"><div class="modal-h"><h3>⚙️ Falta activar esta opción</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
     <div class="del-box" style="margin:0"><div class="del-h"><span class="del-e">🛑</span><div><b class="tt">No se borró nada</b><div>${co?'La función para eliminar clientes todavía no está instalada en tu Supabase. Todo sigue igual.':'Esta opción todavía no está activa. Tu cuenta sigue igual; avísale a tu coach para que la active.'}</div></div></div>
     ${co?`<div class="del-steps"><div class="ds ok"><span>1️⃣</span>Abre Supabase → <b>SQL Editor</b> → <b>New query</b></div><div class="ds ok"><span>2️⃣</span>Pega el script <b>eliminar-cuenta.sql</b> y toca <b>Run</b></div><div class="ds ok"><span>3️⃣</span>Vuelve aquí y elimina otra vez ✅</div></div>
-    <div class="del-f"><a class="btn ghost sm" href="/v2/eliminar-cuenta.sql" target="_blank" rel="noopener">📄 Ver el script</a><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`:`<div class="del-f"><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`}</div></div></div>`);
+    <div class="del-f"><a class="btn ghost sm" href="v2/eliminar-cuenta.sql" target="_blank" rel="noopener">📄 Ver el script</a><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`:`<div class="del-f"><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`}</div></div></div>`);
 }
 function delDoneScreen(){
   document.getElementById('whoAmI').textContent='';const lo=document.getElementById('btnLogout');if(lo)lo.style.display='none';
-  const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="/#crear-cuenta" onclick="setTimeout(()=>location.reload(),50)">✨ Crear un perfil nuevo</a>`;
+  const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="./#crear-cuenta" onclick="setTimeout(()=>location.reload(),50)">✨ Crear un perfil nuevo</a>`;
   document.getElementById('app').innerHTML=`<div class="del-done"><div class="del-big">👋</div><h2>Tu cuenta fue eliminada</h2>
     <p>Borramos para siempre tu perfil, tu historial, tus fotos y tus archivos. 🧹✨</p>
     <p class="muted">Gracias por entrenar con nosotros. Si algún día quieres volver, puedes crear un perfil nuevo con tu correo y empezar en blanco. 💪</p>
@@ -3305,12 +3308,12 @@ function parseClientExtras(wb){
 const CF_LBL={gender:['Género',''],age:['Edad','años'],weight:['Peso','kg'],height:['Estatura','cm'],bodyFat:['% grasa','%'],muscleMass:['Masa muscular','kg'],hrRest:['FC en reposo','lpm'],activity:['Actividad',''],goal:['Objetivo',''],goalWeight:['Peso meta','kg'],kcalTarget:['Kcal del plan','kcal'],occupation:['Ocupación',''],sport:['Deporte','']};
 async function loadClientFile(aid,file){
   const a=S.athletes.find(x=>x.id===aid);if(!a||!file)return;
-  if(!(await isExcelFile(file))){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} Archivo no válido</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">Solo se pueden cargar archivos de <b>Excel (.xlsx)</b> con el formato de la plantilla.</p><p class="muted" style="font-size:13px">«${esc(file.name)}» no es un Excel. Descarga la plantilla, llénala y vuelve a intentarlo.</p></div><div class="modal-f"><a class="btn soft" href="/plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
+  if(!(await isExcelFile(file))){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} Archivo no válido</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">Solo se pueden cargar archivos de <b>Excel (.xlsx)</b> con el formato de la plantilla.</p><p class="muted" style="font-size:13px">«${esc(file.name)}» no es un Excel. Descarga la plantilla, llénala y vuelve a intentarlo.</p></div><div class="modal-f"><a class="btn soft" href="plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
   let wb,plan=null,ex;
   try{await loadXLSX();wb=XLSX.read(await file.arrayBuffer(),{type:'array'})}catch(e){toast(e.message||'No pude abrir el Excel');return}
   try{plan=parseTrainingWorkbook(wb,file.name)}catch(e){plan=null}
   try{ex=parseClientExtras(wb)}catch(e){console.warn(e);ex={}}
-  if(!plan&&!ex.client&&!ex.nutrition){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} No encontré datos</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">El Excel no tiene el formato de la plantilla: no hay hojas de días con la columna «Ejercicio», ni «Datos del cliente», ni «Nutrición».</p></div><div class="modal-f"><a class="btn soft" href="/plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
+  if(!plan&&!ex.client&&!ex.nutrition){openModal(`<div class="modal sm"><div class="modal-h"><h3>${ic('alert',18)} No encontré datos</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0">El Excel no tiene el formato de la plantilla: no hay hojas de días con la columna «Ejercicio», ni «Datos del cliente», ni «Nutrición».</p></div><div class="modal-f"><a class="btn soft" href="plantilla-entrenamiento.xlsx" download>${ic('file',14)} Descargar plantilla</a><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);return}
   if(plan){delete plan.wppSet}
   S.ui.lf={aid,plan,client:ex.client,nutrition:ex.nutrition,fname:file.name,start:TODAY,doPlan:!!plan,doSched:!!plan,doNut:!!ex.nutrition,doCli:!!ex.client};
   renderLoadFile();
@@ -3329,7 +3332,7 @@ function renderLoadFile(){
     ${n?sec('doNut',L.doNut,`🍽️ Alimentación: <b>${n.meals.length} comidas</b>${n.kcalTarget?` · ${fmtN(n.kcalTarget)} kcal`:''}`,`<div class="lf-meals">${n.meals.map(m=>`<div><b>${esc(m.time||'')}</b> ${esc(m.name)} · <span class="muted">${esc(m.foods.join(', ').slice(0,70))}${m.kcal?` · ${m.kcal} kcal`:''}</span></div>`).join('')}</div>${a.nutrition?'<div class="lf-warn">♻️ Reemplaza su plan de alimentación actual.</div>':''}`):''}
     ${c?sec('doCli',L.doCli,`🧍 Datos del cliente: <b>${Object.keys(c).length} datos</b>`,`<div class="lf-chips">${Object.entries(c).map(([k,v])=>{const l=CF_LBL[k]||[k,''];const val=k==='activity'?((ACT.find(([f])=>f===+v)||[])[1]||v):v;return `<span>${l[0]}: <b>${esc(val)}${l[1]?' '+l[1]:''}</b></span>`}).join('')}</div>`):''}
   </div>
-  <div class="modal-f"><a class="btn ghost sm" href="/plantilla-entrenamiento.xlsx" download style="margin-right:auto">${ic('file',13)} Plantilla</a><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" ${L.doPlan||L.doNut||L.doCli?'':'disabled'} onclick="applyLoadFile()">${ic('check',15)} Cargar en la página</button></div></div>`);
+  <div class="modal-f"><a class="btn ghost sm" href="plantilla-entrenamiento.xlsx" download style="margin-right:auto">${ic('file',13)} Plantilla</a><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" ${L.doPlan||L.doNut||L.doCli?'':'disabled'} onclick="applyLoadFile()">${ic('check',15)} Cargar en la página</button></div></div>`);
 }
 function applyLoadFile(){
   const L=S.ui.lf,a=S.athletes.find(x=>x.id===L.aid);if(!L||!a)return;const done=[];
@@ -3354,7 +3357,7 @@ function applyLoadFile(){
 }
 
 function plansHTML(){
-  return `<div class="src-banner">${ic('layers',18)}<div>Plantillas con el formato de tu Excel: días por grupo muscular y 4 fases de series × reps. Crea el plan completo aquí y asígnalo sin subir archivos, o hazlo en Excel.</div><span class="xl-bar"><a class="btn soft sm" href="/plantilla-entrenamiento.xlsx" download>${ic('file',13)} Descargar plantilla Excel</a><label class="btn primary sm upl">${ic('plus',13)} Cargar desde archivo<input type="file" accept=".xlsx,.xls" onchange="uploadPlanXlsx(this.files[0]);this.value=''"></label></span></div>
+  return `<div class="src-banner">${ic('layers',18)}<div>Plantillas con el formato de tu Excel: días por grupo muscular y 4 fases de series × reps. Crea el plan completo aquí y asígnalo sin subir archivos, o hazlo en Excel.</div><span class="xl-bar"><a class="btn soft sm" href="plantilla-entrenamiento.xlsx" download>${ic('file',13)} Descargar plantilla Excel</a><label class="btn primary sm upl">${ic('plus',13)} Cargar desde archivo<input type="file" accept=".xlsx,.xls" onchange="uploadPlanXlsx(this.files[0]);this.value=''"></label></span></div>
   <div class="plans-grid">
     <div class="plan-new" onclick="openPlanEditor()"><div style="text-align:center">${ic('plus',28)}<div style="margin-top:6px">Crear plan desde cero</div></div></div>
     ${S.plans.map(p=>{const n=p.days.reduce((s,d)=>s+d.rows.length,0);return `<div class="card plan-card">
@@ -3437,7 +3440,7 @@ function openClientPlan(aid){
       <div class="cp-opt"><div class="cp-oh">✍️ <b>Crear plan nuevo</b></div><p>Arma el plan a mano para ${fn}: días, ejercicios, 4 fases, tipos de serie y cardio. Al guardar eliges las fechas.</p><button class="btn primary sm" onclick="newClientPlan('${aid}')">${ic('plus',13)} Crear plan</button></div>
       <div class="cp-opt"><div class="cp-oh">📚 <b>Usar una plantilla</b></div><p>Copia una de tus plantillas como plan personal de ${fn}; puedes ajustarla antes de asignarla.</p>
         ${tpls.length?`<select class="inp" id="cp_tpl">${tpls.map(t=>`<option value="${t.id}">${esc(t.name)} · ${t.days.length} días</option>`).join('')}</select><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn ghost sm" onclick="tplToClient('${aid}',gv('cp_tpl'),true)">${ic('edit',13)} Ajustar</button><button class="btn primary sm" onclick="tplToClient('${aid}',gv('cp_tpl'),false)">${ic('cal',13)} Asignar</button></div>`:'<div class="muted" style="font-size:12px">Aún no tienes plantillas.</div>'}</div>
-      <div class="cp-opt"><div class="cp-oh">📄 <b>Desde Excel</b></div><p>Llena la plantilla de Excel y cárgala: se asigna a ${fn} y se programa en su calendario.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn ghost sm" href="/plantilla-entrenamiento.xlsx" download>${ic('file',13)} Plantilla</a><label class="btn primary sm upl">${ic('file',13)} Cargar archivo<input type="file" accept=".xlsx,.xls" onchange="closeModal();loadClientFile('${aid}',this.files[0]);this.value=''"></label></div></div>
+      <div class="cp-opt"><div class="cp-oh">📄 <b>Desde Excel</b></div><p>Llena la plantilla de Excel y cárgala: se asigna a ${fn} y se programa en su calendario.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn ghost sm" href="plantilla-entrenamiento.xlsx" download>${ic('file',13)} Plantilla</a><label class="btn primary sm upl">${ic('file',13)} Cargar archivo<input type="file" accept=".xlsx,.xls" onchange="closeModal();loadClientFile('${aid}',this.files[0]);this.value=''"></label></div></div>
     </div>
     ${pend&&p?`<div class="muted" style="font-size:12px;margin-top:10px">Al asignar un plan nuevo podrás reemplazar las ${pend} sesiones pendientes de su plan actual (las completadas se conservan).</div>`:''}
   </div></div>`);
@@ -3866,6 +3869,11 @@ document.addEventListener('mousemove',e=>{if(tipEl.style.display==='block'){tipE
 
 /* ========================================================= */
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('videoRoot').innerHTML)closeVideo();else closeModal()}});
+const ALT_URL='https://headcoachleonardopablo.com/atletas/';
+function netHelpHTML(){return `<div class="card" style="max-width:440px;margin:60px auto;padding:24px;text-align:center"><div style="font-size:42px">📶</div><h2 style="margin:6px 0">La conexión está tardando</h2>
+  <p class="muted" style="font-size:14px">Puede ser la señal o tu red de datos móviles. Intenta de nuevo${ALT_HOST?'':' o abre la versión alterna, que funciona mejor en algunas redes celulares'}.</p>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px"><button class="btn primary" onclick="location.reload()">🔄 Reintentar</button>${ALT_HOST?'':`<a class="btn soft" href="${ALT_URL}">Abrir versión alterna</a>`}</div></div>`}
+setTimeout(()=>{const el=document.getElementById('app');if(!el||S)return;const t=el.innerText.trim();if(!t||/Cargando tu información|No se pudo cargar la conexión/.test(t))el.innerHTML=netHelpHTML()},15000);
 boot();
 </script>
 </body>
