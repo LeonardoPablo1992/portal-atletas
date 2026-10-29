@@ -824,6 +824,10 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 .cp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .cp-opt{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;background:#fff}
 .cp-oh{font-size:14px}.cp-opt p{margin:0;font-size:12.5px;color:var(--ink-2);flex:1}
+.tchip.aero-t{border-color:#bae6fd;color:#0369a1;background:#f0f9ff}
+.tchip.aero-t:hover{background:#e0f2fe;border-color:#0284c7}
+.mq-w{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mq-o{border:1px solid #bae6fd;border-radius:10px;padding:7px 10px;font-size:13px;min-width:160px;background:#fff}
 </style>
 </head>
 <body>
@@ -929,7 +933,7 @@ const GROUPS=['Pecho','Espalda','Hombro','Bíceps','Tríceps','Cuádriceps','Gl�
 const TTYPES=['Fuerza','Aeróbico','Funcional','Agilidad','Pliometría','Complex'];
 function normType(t){const s=String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return /cardio|aerob/.test(s)?'Aeróbico':/pliom|salto|jump/.test(s)?'Pliometría':/agil/.test(s)?'Agilidad':/complex/.test(s)?'Complex':/funcional|movilidad/.test(s)?'Funcional':'Fuerza'}
 /* grupo muscular por nombre del ejercicio (y si no, por el día) */
-const GROUP_KW=[[/pantorr|gemel|calf|calv|talon/,'Pantorrilla'],[/aductor|costurera|adduct/,'Aductores'],[/abduct|gluteo|glute|hip thrust|thrust|patada|kick|puente/,'Glúteo'],[/femoral|isquio|leg curl|rumano|rdl|good morning|nordic/,'Isquiotibiales'],[/sentadilla|squat|prensa|leg press|extension de cuad|leg extension|zancada|lunge|bulgara|hack|sissy|cuadri/,'Cuádriceps'],[/triceps|tricep|frances|pushdown|fondos|dips|copa|skull/,'Tríceps'],[/elevacion lateral|lateral raise|militar|shoulder|hombro|arnold|face pull|pajaro|deltoid|overhead|reverse fly|rear delt/,'Hombro'],[/remo|row|jalon|pull ?down|dominada|pull ?up|chin|espalda|back|pullover/,'Espalda'],[/press banca|banca|bench|pecho|chest|apertura|fly|peck|cruce|crossover|lagartija|push ?up/,'Pecho'],[/curl|biceps|bicep|martillo|hammer|predicador/,'Bíceps'],[/abdom|crunch|plancha|plank|core|oblicu|sit ?up|rueda|hollow|dead bug/,'Core'],[/caminadora|bici|eliptica|escaladora|assault|cardio|correr|trote|hiit|liss/,'Cardio'],[/movilidad|estiramiento|stretch|mobility/,'Movilidad']];
+const GROUP_KW=[[/pantorr|gemel|calf|calv|talon/,'Pantorrilla'],[/aductor|costurera|adduct/,'Aductores'],[/abduct|gluteo|glute|hip thrust|thrust|patada|kick|puente/,'Glúteo'],[/femoral|isquio|leg curl|rumano|rdl|good morning|nordic/,'Isquiotibiales'],[/sentadilla|squat|prensa|leg press|extension de cuad|leg extension|zancada|lunge|bulgara|hack|sissy|cuadri/,'Cuádriceps'],[/triceps|tricep|frances|pushdown|fondos|dips|copa|skull/,'Tríceps'],[/elevacion lateral|lateral raise|militar|shoulder|hombro|arnold|face pull|pajaro|deltoid|overhead|reverse fly|rear delt/,'Hombro'],[/remo|row|jalon|pull ?down|dominada|pull ?up|chin|espalda|back|pullover/,'Espalda'],[/press banca|banca|bench|pecho|chest|apertura|fly|peck|cruce|crossover|lagartija|push ?up/,'Pecho'],[/curl|biceps|bicep|martillo|hammer|predicador/,'Bíceps'],[/abdom|crunch|plancha|plank|core|oblicu|sit ?up|rueda|hollow|dead bug/,'Core'],[/caminadora|bici|eliptica|escaladora|remadora|assault|air bike|air ski|ski erg|natacion|nadar|cardio|correr|trote|hiit|liss/,'Cardio'],[/movilidad|estiramiento|stretch|mobility/,'Movilidad']];
 function guessGroupEx(name,day){const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();for(const [re,g] of GROUP_KW)if(re.test(n))return g;return guessGroup(day||'')}
 /* alta única en la biblioteca: la usan planes, sesiones, Excel y la carga desde archivo */
 function libAdd(name,ctx,video,cardio){const nm=String(name||'').trim();if(!nm)return false;const x=libFind(nm);if(x){if(video&&!x.video)x.video=video;return false}
@@ -2827,19 +2831,37 @@ function unitTog(mode,a,i,u){u=u||'kg';return `<span class="unit" role="group" a
 /* ---- tarjetas del editor (plan = 'p' con 4 fases · sesión = 't') ---- */
 
 /* ---- trabajo aeróbico: máquina, tiempo, inclinación (caminadora), zona Karvonen y FCE ---- */
-const MACHINES=['Caminadora','Bicicleta','Elíptica','Escaladora','Remo','Assault bike','Correr al aire libre','Otra'];
+const MACHINES=['Caminadora','Elíptica','Remadora','Escaladora','Air bike','Air ski','Aire libre','Natación'];
+const MACH_OLD={'remo':'Remadora','assault bike':'Air bike','correr al aire libre':'Aire libre','otra':'','otro':''};
+function normMachine(m){const s=String(m??'').trim();if(!s)return 'Caminadora';const k=s.toLowerCase();if(k in MACH_OLD)return MACH_OLD[k];return MACHINES.find(x=>x.toLowerCase()===k)||s}
 const isAeroBlock=n=>/cardio|aer[oó]b/i.test(String(n||''));
 const zIdx=z=>{const m=String(z||'').match(/[1-5]/);return m?+m[0]:0};
 function fceTxt(a,z){const i=zIdx(z);if(!i)return '';const k=karvonen(a);return k?`${k.z[i-1].lo}–${k.z[i-1].hi} lpm`:`${ZONES[i-1][1]} de FC de reserva`}
 function fceAth(mode){return mode==='p'?(S.ui.pd&&S.ui.pd.athleteId?S.athletes.find(x=>x.id===S.ui.pd.athleteId):null):curA()}
 function fceUpd(inp,mode){const box=inp.closest('.phc')||inp.closest('.exc'),t=box&&box.querySelector('.fce');if(t)t.textContent=fceTxt(fceAth(mode),inp.value)||'—'}
 const aeroMk=()=>({name:'Cardio',cardio:true,machine:'Caminadora',time:'20',zone:'Z2',incline:'',sets:'1',reps:'',video:''});
-function aeroLine(machine,min,zone,incl,a){const zi=zIdx(zone),f=fceTxt(a,zone);return `🏃 <b>${esc(machine||'Cardio')}</b> · <b>${esc(min||'—')} min</b>${zi?` · Zona ${zi} (${ZNAME[zi-1]})`:''}${(machine||'Caminadora')==='Caminadora'&&incl!==''&&incl!=null?` · inclinación ${esc(incl)}%`:''}${f?` · FCE <b>${f}</b>`:''}`}
-function exMachine(mode,a,i,v){const list=exCollect(mode,a);list[i].machine=v;if(v!=='Caminadora')list[i].incline='';if(!String(list[i].name||'').trim()||MACHINES.includes(list[i].name)||list[i].name==='Cardio')list[i].name=v;exRerender(mode)}
+function aeroLine(machine,min,zone,incl,a){machine=normMachine(machine);const zi=zIdx(zone),f=fceTxt(a,zone);return `🏃 <b>${esc(machine||'Cardio')}</b> · <b>${esc(min||'—')} min</b>${zi?` · Zona ${zi} (${ZNAME[zi-1]})`:''}${(machine||'Caminadora')==='Caminadora'&&incl!==''&&incl!=null?` · inclinación ${esc(incl)}%`:''}${f?` · FCE <b>${f}</b>`:''}`}
+function exMachine(mode,a,i,v){const list=exCollect(mode,a),e=list[i],auto=!String(e.name||'').trim()||MACHINES.includes(e.name)||e.name==='Cardio';
+  if(v==='Otro'){e.machine='';e.mOther=true;if(auto)e.name='Cardio'}else{e.machine=v;e.mOther=false;if(auto)e.name=v}
+  if(v!=='Caminadora')e.incline='';exRerender(mode)}
+/* convertir un ejercicio a aeróbico (borra series, reps, RIR, tempo y descanso) y regresarlo a fuerza */
+function toAero(mode,a,i){
+  if(mode==='p'){exCollect('p',a);exCat(i,AERO);toast('Ahora es aeróbico: se quitaron series, reps, RIR, tempo y descanso');return}
+  collectDraft();const B=S.ui.draft.blocks,e=B[a].exercises[i];exRemove(B[a].exercises,i);if(!B[a].exercises.length)B.splice(a,1);
+  let k=B.findIndex(b=>isAeroBlock(b.name));if(k<0){B.push({name:AERO,exercises:[]});k=B.length-1}
+  B[k].exercises.push({name:String(e.name||'').trim()||'Cardio',cardio:true,machine:'Caminadora',time:'20',zone:'Z2',incline:'',sets:'1',reps:'',video:e.video||''});
+  exRerender('t');toast('Pasó al bloque aeróbico: se quitaron series, reps, RIR, tempo y descanso');
+}
+function fromAero(mode,a,i){
+  if(mode==='p'){exCollect('p',a);exCat(i,CATS[1]);return}
+  collectDraft();const B=S.ui.draft.blocks,e=B[a].exercises[i];B[a].exercises.splice(i,1);if(!B[a].exercises.length)B.splice(a,1);
+  let k=B.findIndex(b=>!isAeroBlock(b.name));if(k<0){B.push({name:'Principal',exercises:[]});k=B.length-1}
+  B[k].exercises.push({...exMk('t'),name:e.name,video:e.video||''});exRerender('t');
+}
 function addAeroBlock(){collectDraft();S.ui.draft.blocks.push({name:AERO,exercises:[aeroMk()]});exRerender('t')}
 function normAero(blocks){blocks.forEach(b=>{const on=isAeroBlock(b.name);b.exercises.forEach(e=>{if(on){e.cardio=true;e.sets='1';e.reps='';if(!String(e.name||'').trim())e.name=e.machine||'Cardio'}else delete e.cardio})});return blocks}
 function aeroCard(mode,a,i,e,lab,P,at,vid){
-  const ath=fceAth(mode),mq=e.machine||'Caminadora';
+  const ath=fceAth(mode),mq=normMachine(e.machine),oth=!!e.mOther||!MACHINES.includes(mq);
   return `<div class="exc aero">
    <div class="top"><span class="num">${lab}</span>
     <input class="nm" ${at('name')} list="dl_ex" value="${esc(e.name||'')}" placeholder="Ej. Cardio LISS">
@@ -2847,12 +2869,12 @@ function aeroCard(mode,a,i,e,lab,P,at,vid){
     <span class="vwrap vw"><input class="yt-in" ${at('video')} value="${esc(e.video||'')}" placeholder="Link del video" oninput="rowPrev(this,'${vid}')"><button type="button" class="vprev" title="Vista previa" onclick="prevInput(this)">${ic('play',12,true)}</button></span>
     <span class="mv"><button type="button" title="Subir" onclick="exMove('${mode}',${a},${i},-1)">↑</button><button type="button" title="Bajar" onclick="exMove('${mode}',${a},${i},1)">↓</button></span>
     <button type="button" class="del" title="Quitar" onclick="${P?`planDelRow(${i})`:`delEx(${a},${i})`}">${ic('trash',15)}</button></div>
-   <div class="aero-tag">🏃 Trabajo aeróbico ${ath&&karvonen(ath)?'':`<span class="muted" style="font-weight:500">· ${P?'la FCE en lpm se calcula al asignarlo a un cliente con edad y FC en reposo':'agrega edad y FC en reposo del cliente para ver la FCE en lpm'}</span>`}</div>
-   ${P?`<div class="phs">${[0,1,2,3].map(f=>{const q=e.ph[f];return `<div class="phc ${q?'':'off'}"><b>Fase ${f+1}</b>${stp('min',`data-pp="${a}|${i}|${f}|0"`,q?q[0]:'','—')}<span class="by">minutos · zona</span>${stp('zone',`data-pp="${a}|${i}|${f}|1" onchange="fceUpd(this,'p')"`,q?q[1]:'','—')}<span class="fce">${fceTxt(ath,q?q[1]:'')||'—'}</span></div>`}).join('')}</div>`:''}
+   <div class="aero-tag">🏃 Trabajo aeróbico <button type="button" class="tchip ghost" style="margin-left:4px" onclick="fromAero('${mode}',${a},${i})" title="Regresar a ejercicio de fuerza">💪 Cambiar a fuerza</button> ${ath&&karvonen(ath)?'':`<span class="muted" style="font-weight:500">· ${P?'la FCE en lpm se calcula al asignarlo a un cliente con edad y FC en reposo':'agrega edad y FC en reposo del cliente para ver la FCE en lpm'}</span>`}</div>
+   ${P?`<div class="phs">${[0,1,2,3].map(f=>{const q=e.ph[f];return `<div class="phc ${q?'':'off'}"><b>Fase ${f+1}</b>${stp('min',`data-pp="${a}|${i}|${f}|0"`,q?q[0]:'','—')}<span class="by">minutos · zona de FC</span>${stp('zone',`data-pp="${a}|${i}|${f}|1" onchange="fceUpd(this,'p')"`,q?q[1]:'','—')}<span class="fce">${fceTxt(ath,q?q[1]:'')||'—'}</span></div>`}).join('')}</div>`:''}
    <div class="prm">
-    <div class="pf"><label>Máquina</label><select class="mq" ${at('machine')} onchange="exMachine('${mode}',${a},${i},this.value)">${MACHINES.map(m=>`<option ${m===mq?'selected':''}>${m}</option>`).join('')}</select></div>
-    ${P?'':`<div class="pf"><label>Tiempo (min)</label>${stp('min',at('time'),e.time,'20')}</div><div class="pf"><label>Zona Karvonen</label>${stp('zone',at('zone')+` onchange="fceUpd(this,'t')"`,e.zone,'Z2')}</div>`}
-    <div class="pf"><label>Inclinación</label>${mq==='Caminadora'?`<span class="incl">${stp('incl',at('incline'),e.incline,'0')}<b>%</b></span>`:'<span class="na-pill">No aplica</span>'}</div>
+    <div class="pf"><label>Modalidad</label><span class="mq-w"><select class="mq" onchange="exMachine('${mode}',${a},${i},this.value)">${MACHINES.map(m=>`<option ${!oth&&m===mq?'selected':''}>${m}</option>`).join('')}<option value="Otro" ${oth?'selected':''}>Otro (escribir)</option></select>${oth?`<input class="mq-o" ${at('machine')} value="${esc(e.mOther&&!e.machine?'':mq)}" placeholder="Escribe la modalidad">`:`<input type="hidden" ${at('machine')} value="${esc(mq)}">`}</span></div>
+    ${P?'':`<div class="pf"><label>Tiempo (min)</label>${stp('min',at('time'),e.time,'20')}</div><div class="pf"><label>Intensidad (zona de FC)</label>${stp('zone',at('zone')+` onchange="fceUpd(this,'t')"`,e.zone,'Z2')}</div>`}
+    <div class="pf"><label>Inclinación</label>${!oth&&mq==='Caminadora'?`<span class="incl">${stp('incl',at('incline'),e.incline,'0')}<b>%</b></span>`:'<span class="na-pill">No aplica</span>'}</div>
     ${P?'':`<div class="pf"><label>FCE ${qm('fce')}</label><span class="fce fce-big">${fceTxt(ath,e.zone)||'—'}</span></div>`}
    </div>
    <div class="ex-vp" id="${vid}">${vInfo(e.video)?inlineVid(e.video,e.name):''}</div></div>`;
@@ -2867,7 +2889,7 @@ function exCard(mode,a,i,e,lab,g){
     <span class="vwrap vw"><input class="yt-in" ${at('video')} value="${esc(e.video||'')}" placeholder="Link del video" oninput="rowPrev(this,'${vid}')"><button type="button" class="vprev" title="Vista previa" onclick="prevInput(this)">${ic('play',12,true)}</button></span>
     <span class="mv"><button type="button" title="Subir" onclick="exMove('${mode}',${a},${i},-1)">↑</button><button type="button" title="Bajar" onclick="exMove('${mode}',${a},${i},1)">↓</button></span>
     <button type="button" class="del" title="Quitar" onclick="${P?`planDelRow(${i})`:`delEx(${a},${i})`}">${ic('trash',15)}</button></div>
-   <div class="tchips">${inG?'':TYPE_LIST.filter(t=>t!=='Dropset').map(t=>`<button type="button" class="tchip ${t==='Aislado'?'on':''}" title="${esc(TYPE_TIP[t])}" onclick="exType('${mode}',${a},${i},'${t}')">${t}</button>`).join('')}<button type="button" class="tchip drop ${e.drop?'on':''}" title="${esc(TYPE_TIP.Dropset)}" onclick="exType('${mode}',${a},${i},'Dropset')">${e.drop?'✓ ':''}Dropset</button>${inG?`<button type="button" class="tchip ghost" onclick="exType('${mode}',${a},${i},'Aislado')">Sacar del grupo</button>`:''}</div>
+   <div class="tchips">${inG?'':TYPE_LIST.filter(t=>t!=='Dropset').map(t=>`<button type="button" class="tchip ${t==='Aislado'?'on':''}" title="${esc(TYPE_TIP[t])}" onclick="exType('${mode}',${a},${i},'${t}')">${t}</button>`).join('')}<button type="button" class="tchip drop ${e.drop?'on':''}" title="${esc(TYPE_TIP.Dropset)}" onclick="exType('${mode}',${a},${i},'Dropset')">${e.drop?'✓ ':''}Dropset</button><button type="button" class="tchip aero-t" title="Convertir en trabajo aeróbico: quita series, reps, RIR, tempo y descanso" onclick="toAero('${mode}',${a},${i})">🏃 Aeróbico</button>${inG?`<button type="button" class="tchip ghost" onclick="exType('${mode}',${a},${i},'Aislado')">Sacar del grupo</button>`:''}</div>
    ${P?`<div class="phs">${[0,1,2,3].map(f=>`<div class="phc ${e.ph[f]?'':'off'}"><b>Fase ${f+1}</b>${stp('sets',`data-pp="${a}|${i}|${f}|0"`,e.ph[f]?e.ph[f][0]:'','—')}<span class="by">series × reps</span>${stp('reps',`data-pp="${a}|${i}|${f}|1"`,e.ph[f]?e.ph[f][1]:'','—','w')}</div>`).join('')}</div>`:''}
    <div class="prm">
     ${P?'':`<div class="pf"><label>Series</label>${stp('sets',at('sets'),e.sets,'3')}</div><div class="pf"><label>Reps</label>${stp('reps',at('reps'),e.reps,'10-12','w')}</div>`}
@@ -2971,7 +2993,7 @@ function refreshPlanTasks(p,orig){
 /* ---- Excel: plantilla, exportar y subir ---- */
 const XLSX_SRC='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement('script');s.src=XLSX_SRC;s.onload=ok;s.onerror=()=>ko(new Error('No se pudo cargar el lector de Excel. Revisa tu conexión.'));document.head.appendChild(s)})}
-const XL_HEAD=['Grupo','Combinación','Tipo','Ejercicio','F1 Series','F1 Reps','F2 Series','F2 Reps','F3 Series','F3 Reps','F4 Series','F4 Reps','Tempo','RIR','Descanso','Unidad','Video','Máquina','Inclinación'];
+const XL_HEAD=['Grupo','Combinación','Tipo','Ejercicio','F1 Series','F1 Reps','F2 Series','F2 Reps','F3 Series','F3 Reps','F4 Series','F4 Reps','Tempo','RIR','Descanso','Unidad','Video','Modalidad','Inclinación'];
 const catShort=c=>c===CATS[0]?'Rezagado':c===CATS[2]?'Complementario':c===AERO?'Aeróbico':'Principal';
 function xlSheetName(n,used){let s=String(n||'Día').replace(/[\[\]:*?\/\\]/g,' ').trim().slice(0,31)||'Día',b=s,k=2;while(used.has(s.toLowerCase()))s=`${b.slice(0,28)} ${k++}`;used.add(s.toLowerCase());return s}
 async function exportPlanXlsx(id){
@@ -3007,14 +3029,14 @@ function parseTrainingWorkbook(wb,fname){
       else if(/^series?$/.test(h))col.sets=c;else if(/^reps?$|repetici/.test(h))col.reps=c;
       else if(/grupo|categor/.test(h))col.cat=c;else if(/combin/.test(h))col.combo=c;else if(/^tipo/.test(h))col.type=c;
       else if(/^ejercicio$/.test(h))col.name=c;else if(/tempo/.test(h))col.tempo=c;else if(/^rir/.test(h))col.rir=c;
-      else if(/m[aá]quina|equipo/.test(h))col.machine=c;else if(/inclin/.test(h))col.incline=c;else if(/desc|rest/.test(h))col.rest=c;else if(/unidad|unit/.test(h))col.unit=c;else if(/video|link/.test(h))col.video=c}
+      else if(/m[aá]quina|equipo|modalidad/.test(h))col.machine=c;else if(/inclin/.test(h))col.incline=c;else if(/desc|rest/.test(h))col.rest=c;else if(/unidad|unit/.test(h))col.unit=c;else if(/video|link/.test(h))col.video=c}
     const na=v=>/^(na|n\/a|-|—|–)$/i.test(v)?'':v,rows=[];let lastCat='Principal';
     for(let r=hr+1;r<=R.e.r;r++){
       const name=txt(r,col.name);if(!name)continue;if(/^total$/i.test(name))break;
       const cv=txt(r,col.cat).toLowerCase(),cat=/aer[oó]b|cardio/.test(cv)?AERO:/rezag|activ/.test(cv)?CATS[0]:/complem|acces/.test(cv)?CATS[2]:/princ/.test(cv)?CATS[1]:lastCat;lastCat=cat;
       const ph=[0,1,2,3].map(f=>{const sc=col.ph[f][0]!=null?col.ph[f][0]:col.sets,rc=col.ph[f][1]!=null?col.ph[f][1]:col.reps,s=na(txt(r,sc)),rp=na(txt(r,rc));return s?[s,rp]:null});
       const tv=TYPE_ALIAS(txt(r,col.type)),vc=cell(r,col.video);
-      rows.push({name,cat,ph,tempo:na(txt(r,col.tempo)),rir:na(txt(r,col.rir)),rest:na(txt(r,col.rest)),video:vc?String((vc.l&&vc.l.Target)||vc.v||'').trim():'',unit:/lb|libra/i.test(txt(r,col.unit))?'lb':'kg',...(cat===AERO?{machine:MACHINES.find(m=>m.toLowerCase()===txt(r,col.machine).toLowerCase())||txt(r,col.machine)||'Caminadora',incline:na(txt(r,col.incline)).replace('%','').trim(),tempo:'',rir:'',rest:''}:{}),link:false,gtype:'',drop:/drop/.test(tv),_c:txt(r,col.combo).toUpperCase(),_t:Object.keys(GSIZE).find(k=>tv.includes(k.toLowerCase()))||''});
+      rows.push({name,cat,ph,tempo:na(txt(r,col.tempo)),rir:na(txt(r,col.rir)),rest:na(txt(r,col.rest)),video:vc?String((vc.l&&vc.l.Target)||vc.v||'').trim():'',unit:/lb|libra/i.test(txt(r,col.unit))?'lb':'kg',...(cat===AERO?{machine:normMachine(txt(r,col.machine)),incline:na(txt(r,col.incline)).replace('%','').trim(),tempo:'',rir:'',rest:''}:{}),link:false,gtype:'',drop:/drop/.test(tv),_c:txt(r,col.combo).toUpperCase(),_t:Object.keys(GSIZE).find(k=>tv.includes(k.toLowerCase()))||''});
     }
     if(!rows.length)return;
     rows.forEach(x=>{if(x.cat===AERO){x._c='';x._t='';x.drop=false;x.ph=x.ph.map(q=>q?[String(parseInt(q[0])||q[0]),zIdx(q[1])?'Z'+zIdx(q[1]):'']:null)}});
