@@ -21,3 +21,11 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 
 - `index.html` — panel del coach y vista del atleta (según el rol de quien entra).
 - `supabase-v2.sql` — tablas nuevas y permisos (RLS). Se puede correr más de una vez.
+
+## Editor de entrenamientos (29/10/2026)
+
+- Cada ejercicio tiene botones − / + para series, reps, RIR, tempo y descanso, y un selector kg / lb.
+- Tipos: Aislado, Biserie (2), Triserie (3), Superserie (2), Megaserie (4+) y Dropset. Se guardan en cada ejercicio como `link` (va seguido del siguiente), `gtype` y `drop`; el atleta los ve agrupados (A1, A2…).
+- Una sesión ya asignada se edita desde su detalle (botón Editar); puede aplicarse a las siguientes sesiones iguales. Las sesiones editadas a mano no se sobrescriben al guardar el plan.
+- Al guardar un plan se actualizan sus sesiones pendientes del calendario (casilla en el editor).
+- Excel: `plantilla-entrenamiento.xlsx` (Plantillas → Descargar plantilla Excel / Subir Excel). También se lee la plantilla anterior `plantilla-plan.xlsx`. Cada plan se puede exportar a Excel y volver a cargar.
