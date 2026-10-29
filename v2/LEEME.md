@@ -64,3 +64,12 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - Cada cliente (nuevo o actual) ve la ventana al entrar hasta aceptar la versión vigente (`PRIVACY.version` en index.html). Aceptar exige la casilla de consentimiento expreso para datos sensibles (art. 8); finalidades secundarias opcionales. Cancelar bloquea el acceso y permite salir.
 - La aceptación se guarda en `pt_evo` (kind `privacy`, versión, fecha, secundarias, navegador). El coach ve el estado en la ficha del cliente.
 - Para publicar una nueva versión: edita la página del aviso, sube `PRIVACY.version` y su fecha; todos los clientes lo volverán a aceptar.
+
+## Multi-coach: «Soy coach / Soy atleta» y catálogo de coaches
+
+- Requiere correr una vez `multi-coach.sql` (después de los otros scripts). Antes de correrlo, la app funciona como siempre (un solo coach).
+- **Crear cuenta** (en la app nueva, desde «Entrar» o `/#crear-cuenta`): elige «Soy atleta» o «Soy coach». El coach queda activo al instante con 14 días de prueba (`pt_coaches.trial_ends_at`); el cobro automático está pendiente.
+- **Cada coach ve solo a sus clientes**: el acceso a las tablas `pt_*` depende del vínculo activo en `pt_links`. Plantillas por coach; biblioteca compartida (solo el coach principal borra).
+- **Cliente sin coach** → ve el catálogo (`pt_coach_profiles`) y envía una solicitud; el coach la acepta o rechaza en «Solicitudes». Al darlo de alta el coach: si la cuenta es nueva queda vinculada; si ya existía, se le envía una invitación (evita que un coach tome clientes de otro).
+- **Mi perfil de coach**: ficha pública del catálogo (foto, título, especialidades, ciudad, modalidad, precios, bio, sitio, Instagram, visible u oculto).
+- Los clientes actuales quedan asignados a coach@headcoachleonardopablo.com. Las tablas del portal anterior no cambian y siguen siendo solo del coach principal.

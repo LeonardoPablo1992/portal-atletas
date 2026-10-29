@@ -786,6 +786,38 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 .priv-line{text-align:center;font-size:12px;color:var(--muted);margin:10px 8px 0}
 .priv-st{font-size:12px;color:#b45309;margin-top:6px}
 .priv-st.ok{color:var(--green-d)}
+.role-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.role{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:14px 10px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;transition:.15s}
+.role .re{font-size:28px}.role small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.role.on{border-color:var(--green);background:var(--green-50);box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+.cat-wrap{max-width:980px;margin:22px auto;padding:0 14px}
+.cat-h{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,var(--green-50),#fff);border:1px solid var(--green-200);border-radius:20px;padding:16px 18px;margin-bottom:14px}
+.cat-h h2{margin:0}.cat-h p{margin:4px 0 0;color:var(--ink-2);font-size:14px}
+.cat-ic{font-size:30px;width:56px;height:56px;border-radius:16px;background:#fff;display:grid;place-items:center;flex-shrink:0}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.cc{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 4px 14px rgba(0,0,0,.03)}
+.cc-top{display:flex;gap:12px;align-items:center}
+.cc h3{margin:0;font-size:17px}.cc-ti{font-size:13px;color:var(--green-d);font-weight:600}.cc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.cc-ph{width:64px;height:64px;border-radius:18px;object-fit:cover;flex-shrink:0}
+.cc-in{display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px}
+.cc-sp{display:flex;flex-wrap:wrap;gap:6px}.cc-sp span{background:var(--green-50);color:var(--green-d);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
+.cc-bio{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.cc-pr{display:flex;flex-direction:column;gap:4px;background:var(--bg);border-radius:12px;padding:8px 10px}
+.cc-pr div{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.cc-links{display:flex;gap:12px;font-size:12.5px}.cc-links a{color:var(--green-d);text-decoration:none;font-weight:600}
+.cc-f{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cc-f .btn.primary:not(.sm){width:100%;justify-content:center}
+.cc-st{font-size:13px;font-weight:700;color:#7c3aed;background:#f5f3ff;border-radius:10px;padding:8px 10px}
+.cc-st.wait{color:#b45309;background:#fffbeb}.cc-st.ok{color:var(--green-d);background:var(--green-50)}.cc-st.no{color:var(--muted);background:var(--bg);font-weight:500}
+.reqs{border:1px solid #ddd6fe;background:#faf5ff;border-radius:14px;padding:10px;margin:6px 0}
+.reqs-h{font-weight:800;font-size:13px;display:flex;gap:6px;align-items:center;margin-bottom:6px;color:#6d28d9}
+.req{background:#fff;border-radius:10px;padding:8px;margin-top:6px}
+.req-n{display:flex;flex-direction:column;font-size:13px}.req-n span{font-size:11px;color:var(--muted)}
+.req-f{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+.req.inv{opacity:.8}
+.trial-bar{background:#ecfdf5;color:#065f46;border-bottom:1px solid #a7f3d0;text-align:center;font-size:12.5px;padding:7px 12px}
+.trial-bar.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+#trialBar:empty{display:none}
 </style>
 </head>
 <body>
@@ -1046,11 +1078,20 @@ async function loadData(){
   const metaMap={};meta.forEach(r=>{metaMap[r.id]=r.doc||{}});
   let athletes=[],plansOld=[];
   if(IS_COACH){
+    const names=new Map();
+    if(MT){
+      const [cl,pl]=await Promise.all([SB.rpc('pt_my_clients'),IS_ADMIN?SB.from('plans').select('athlete_email,athlete_name,title,data,active,created_at'):Promise.resolve({data:[]})]);
+      (cl.data||[]).forEach(r=>{const e=String(r.email||'').toLowerCase();if(e&&e!==ME.email)names.set(e,r.full_name||'')});
+      plansOld=(pl.data||[]).filter(p=>names.has(String(p.athlete_email||'').toLowerCase()));
+      plansOld.filter(p=>p.active).forEach(p=>{const e=p.athlete_email.toLowerCase();if(!names.get(e))names.set(e,p.athlete_name||'')});
+      Object.keys(metaMap).forEach(e=>{if(!names.has(e))delete metaMap[e]});
+    }else{
     const [pr,pl]=await Promise.all([SB.from('profiles').select('*'),SB.from('plans').select('athlete_email,athlete_name,title,data,active,created_at')]);
-    plansOld=pl.data||[];const names=new Map();
+    plansOld=pl.data||[];
     (pr.data||[]).forEach(p=>{const e=String(p.email||'').toLowerCase();if(e&&e!==ME.email)names.set(e,p.full_name||'')});
     plansOld.filter(p=>p.active&&String(p.athlete_email||'').includes('@')).forEach(p=>{const e=p.athlete_email.toLowerCase();if(e!==ME.email&&!names.get(e))names.set(e,p.athlete_name||'')});
     Object.keys(metaMap).forEach(e=>{if(!names.has(e))names.set(e,'')});
+    }
     athletes=[...names].map(([e,n])=>({goal:'',...metaMap[e],id:e,email:e,color:colorFor(e),name:(metaMap[e]&&metaMap[e].name)||n||e.split('@')[0]})).sort((x,y)=>x.name.localeCompare(y.name,'es'));
   }else{
     const {data:pl}=await SB.from('plans').select('athlete_email,title,active,data,created_at').eq('athlete_email',ME.email).eq('active',true);plansOld=pl||[];
@@ -1103,6 +1144,7 @@ function seedCoachData(plansOld){
     if(f.goal&&!a.goal)a.goal=f.goal;if(r.nutrition&&r.nutrition.kcalTarget&&!a.kcalTarget)a.kcalTarget=r.nutrition.kcalTarget;
     if(f.weight&&!S.evo.some(e=>e.athleteId===a.id&&e.peso!=null))S.evo.push({id:uid(),athleteId:a.id,date:op.created_at?fmt(new Date(op.created_at)):TODAY,peso:f.weight});
   });
+  if(MT&&!IS_ADMIN){const NM={'Lizeth Esquivel':'Glúteo y pierna · 5 días','Leonardo Pablo':'Hipertrofia · 6 días','Masiel':'Tonificación · 5 días'};S.plans.forEach(p=>{if(NM[p.src]){p.name='Plan base · '+NM[p.src];p.src='';ch=true}})}
   S.library.forEach(x=>{const t=normType(x.type);if(t!==x.type){x.type=t;ch=true}if(!x.group||x.group==='Full body'){const g=guessGroupEx(x.name,'');if(g&&g!=='Full body'&&g!==x.group){x.group=g;ch=true}}});
   if(ch)save();
 }
@@ -1251,6 +1293,11 @@ function demoClient(){
       if(n==='coach_delete_client'){if(!isC())return {data:null,error:{message:'not_coach'}};const em=String((arguments[1]||{}).target_email||'').toLowerCase();if(!em||em===DEMO.COACH)return {data:null,error:{message:'invalid_target'}};
         ['pt_tasks','pt_acts','pt_evo','pt_messages','pt_activity','pt_notifs','plans','sessions','comments','evidence'].forEach(t=>{if(db[t])db[t]=db[t].filter(r=>String(r.athlete_email||'').toLowerCase()!==em)});
         db.pt_athletes=(db.pt_athletes||[]).filter(r=>r.id!==em);db.pt_templates=(db.pt_templates||[]).filter(r=>String((r.doc||{}).athleteId||'').toLowerCase()!==em);db.profiles=(db.profiles||[]).filter(r=>r.email!==em);delete db.auth[em];demoPersist();return {data:{ok:true},error:null}}
+      if(n==='pt_my_role')return {data:{coach:isC(),admin:isC(),status:'active',linked:true,coach_email:DEMO.COACH},error:null};
+      if(n==='pt_my_clients')return {data:isC()?(db.profiles||[]).filter(p=>p.email!==DEMO.COACH).map(p=>({email:p.email,full_name:p.full_name})):[],error:null};
+      if(n==='pt_coach_requests')return {data:[],error:null};
+      if(n==='pt_coach_add_client')return {data:'active',error:null};
+      if(n==='pt_coach_confirm_email'||n==='pt_register_coach')return {data:true,error:null};
       return {data:n==='is_coach'?isC():null,error:null}},
     from:Q};
 }
@@ -1278,23 +1325,152 @@ function seedDemo(){
   S.library.forEach(x=>{x.src=['Coach']});
   DEMO.db.seeded=true;demoPersist();S.ui.section='clientes';save();
 }
+/* =========================================================
+   MULTI-COACH · registro con rol, catálogo de coaches y solicitudes
+   MT=true cuando la base ya tiene multi-coach.sql (si no, todo funciona como antes).
+========================================================= */
+let MT=false,ROLE={},IS_ADMIN=false,REQS=[],CATALOG=[],MYLINKS=[];
+async function loadRole(u){
+  try{const {data,error}=await SB.rpc('pt_my_role');if(error)throw error;MT=true;ROLE=data||{}}
+  catch(e){MT=false;ROLE={};const {data:c,error}=await SB.rpc('is_coach');if(error)throw error;IS_COACH=!!c;IS_ADMIN=IS_COACH;
+    if(!IS_COACH&&String(((u&&u.user_metadata)||{}).role||'')==='coach')throw new Error('COACH_PENDING');return}
+  const want=String(((u&&u.user_metadata)||{}).role||'').toLowerCase();
+  if(want==='coach'&&!ROLE.coach){try{const {data,error}=await SB.rpc('pt_register_coach',{p_name:((u.user_metadata||{}).full_name)||''});if(!error&&data)ROLE=data}catch(e){console.warn(e)}}
+  IS_COACH=!!ROLE.coach;IS_ADMIN=!!ROLE.admin;
+}
+async function loadCoachRequests(){if(!MT||!IS_COACH){REQS=[];return}try{const {data}=await SB.rpc('pt_coach_requests');REQS=data||[]}catch(e){REQS=[]}}
+async function loadCatalog(){
+  if(!MT){CATALOG=[];MYLINKS=[];return}
+  try{const [c,l]=await Promise.all([SB.from('pt_coach_profiles').select('email,doc,public').eq('public',true),SB.from('pt_links').select('coach_email,status,created_at').eq('athlete_email',ME.email)]);
+    CATALOG=(c.data||[]).map(r=>({email:r.email,...(r.doc||{})})).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));MYLINKS=l.data||[]}catch(e){CATALOG=[];MYLINKS=[]}
+}
+const needsCoach=()=>!!(MT&&S&&!IS_COACH&&!ROLE.linked);
+const coachCard=em=>CATALOG.find(c=>c.email===em)||null;
+const mxn=n=>'$'+Number(n||0).toLocaleString('es-MX')+' MXN';
+function coachCardHTML(c,mode){
+  const pend=MYLINKS.find(l=>l.coach_email===c.email&&l.status==='pending'),inv=MYLINKS.find(l=>l.coach_email===c.email&&l.status==='invited'),rej=MYLINKS.find(l=>l.coach_email===c.email&&l.status==='rejected');
+  const hasPend=MYLINKS.some(l=>l.status==='pending');
+  const photo=c.photo?`<img class="cc-ph" src="${c.photo}" alt="${esc(c.name||'')}">`:`<div class="cc-ph cc-in" style="background:${colorFor(c.email)}">${initials(c.name||c.email)}</div>`;
+  return `<div class="cc">
+    <div class="cc-top">${photo}<div style="min-width:0"><h3>${esc(c.name||c.email)}</h3>${c.title?`<div class="cc-ti">${esc(c.title)}</div>`:''}<div class="cc-meta">${[c.city&&`📍 ${esc(c.city)}`,c.modality&&`💻 ${esc(c.modality)}`].filter(Boolean).join(' · ')}</div></div></div>
+    ${(c.specialties||[]).length?`<div class="cc-sp">${c.specialties.map(s=>`<span>${esc(s)}</span>`).join('')}</div>`:''}
+    ${c.bio?`<p class="cc-bio">${esc(c.bio)}</p>`:''}
+    ${(c.prices||[]).length?`<div class="cc-pr">${c.prices.map(p=>`<div><span>${esc(p.label)}</span><b>${mxn(p.price)}</b></div>`).join('')}</div>`:''}
+    ${c.web||c.instagram?`<div class="cc-links">${c.web?`<a href="${esc(c.web)}" target="_blank" rel="noopener">🌐 Sitio</a>`:''}${c.instagram?`<a href="https://instagram.com/${esc(String(c.instagram).replace(/^@/,''))}" target="_blank" rel="noopener">📸 ${esc(c.instagram)}</a>`:''}</div>`:''}
+    ${mode==='mine'?'<div class="cc-st ok">✅ Es tu coach</div>':
+      inv?`<div class="cc-st">💌 ${esc(c.name||'')} te invitó a entrenar</div><div class="cc-f"><button class="btn ghost sm" onclick="respondInvite('${c.email}',false)">Rechazar</button><button class="btn primary sm" onclick="respondInvite('${c.email}',true)">Aceptar</button></div>`:
+      pend?`<div class="cc-st wait">⏳ Solicitud enviada · espera su respuesta</div><div class="cc-f"><button class="btn ghost sm" onclick="cancelCoachRequest()">Cancelar solicitud</button></div>`:
+      `${rej?'<div class="cc-st no">La solicitud anterior no fue aceptada.</div>':''}<div class="cc-f"><button class="btn primary" ${hasPend?'disabled title="Ya tienes una solicitud en espera"':''} onclick="requestCoach('${c.email}')">💪 Quiero entrenar contigo</button></div>`}
+  </div>`;
+}
+function catalogHTML(){
+  const fn=esc(String(ME.name||'').split(' ')[0]||'');
+  return `<div class="cat-wrap"><div class="cat-h"><div class="cat-ic">🏋️</div><div><h2>Elige a tu coach</h2><p>Hola${fn?' '+fn:''} 👋 Conoce a los coaches de ProTrainerPlus y envíale una solicitud al que más te guste. Cuando la acepte, verás aquí tu plan.</p></div></div>
+    ${CATALOG.length?`<div class="cat-grid">${CATALOG.map(c=>coachCardHTML(c)).join('')}</div>`:'<div class="card empty-state">Aún no hay coaches en el catálogo.</div>'}
+    <div class="muted" style="font-size:12px;text-align:center;margin:16px 0">¿Tienes dudas? Escríbenos a <a href="mailto:coach@headcoachleonardopablo.com" style="color:var(--green-d)">coach@headcoachleonardopablo.com</a></div></div>`;
+}
+async function requestCoach(em){const c=coachCard(em);try{const {error}=await SB.rpc('pt_request_coach',{p_coach:em});if(error)throw error;await loadCatalog();renderApp();toast(`Solicitud enviada a ${c?c.name:'tu coach'} 💪`)}catch(e){toast(/already_linked/.test(e.message)?'Ya tienes coach':/coach_not_found/.test(e.message)?'Ese coach ya no está disponible':'No se pudo enviar la solicitud')}}
+async function cancelCoachRequest(){try{await SB.rpc('pt_cancel_request');await loadCatalog();renderApp();toast('Solicitud cancelada')}catch(e){toast('No se pudo cancelar')}}
+async function respondInvite(em,ok){try{const {error}=await SB.rpc('pt_respond_invite',{p_coach:em,p_accept:ok});if(error)throw error;if(ok){location.reload();return}await loadCatalog();renderApp();toast('Invitación rechazada')}catch(e){toast('No se pudo responder')}}
+async function respondRequest(em,ok){
+  try{const {error}=await SB.rpc('pt_respond_request',{p_athlete:em,p_accept:ok});if(error)throw error;
+    const r=REQS.find(x=>x.athlete_email===em);REQS=REQS.filter(x=>x.athlete_email!==em);
+    if(ok){const a={goal:'',id:em,email:em,color:colorFor(em),name:(r&&r.full_name)||em.split('@')[0]};if(!S.athletes.some(x=>x.id===em))S.athletes.push(a);S.ui.athleteId=em;pushNotif(em,`¡${ROLE&&ROLE.coach?'Tu coach':'El coach'} aceptó tu solicitud! Pronto verás tu plan aquí 💪`);commit();toast(`${a.name} ya es tu cliente`)}
+    else{renderApp();toast('Solicitud rechazada')}}
+  catch(e){toast(/already_linked/.test(e.message)?'Esa persona ya tiene coach':'No se pudo responder')}
+}
+function reqsSideHTML(){
+  const pend=REQS.filter(r=>r.status==='pending'),inv=REQS.filter(r=>r.status==='invited');
+  if(!pend.length&&!inv.length)return '';
+  return `<div class="reqs"><div class="reqs-h">💌 Solicitudes <span class="count">${pend.length}</span></div>
+    ${pend.map(r=>`<div class="req"><div class="req-n"><b>${esc(r.full_name||r.athlete_email.split('@')[0])}</b><span>${esc(r.athlete_email)}</span></div><div class="req-f"><button class="btn ghost sm" onclick="respondRequest('${r.athlete_email}',false)">Rechazar</button><button class="btn primary sm" onclick="respondRequest('${r.athlete_email}',true)">Aceptar</button></div></div>`).join('')}
+    ${inv.map(r=>`<div class="req inv"><div class="req-n"><b>${esc(r.full_name||r.athlete_email.split('@')[0])}</b><span>Invitación enviada · esperando que acepte</span></div></div>`).join('')}</div>`;
+}
+function trialBarHTML(){
+  if(!MT||!IS_COACH||IS_ADMIN||ROLE.status!=='trial'||!ROLE.trial_ends_at)return '';
+  const d=Math.ceil((new Date(ROLE.trial_ends_at)-Date.now())/864e5);
+  return `<div class="trial-bar ${d<=3?'warn':''}">${d>0?`🎁 Prueba gratis: te ${d===1?'queda <b>1 día</b>':`quedan <b>${d} días</b>`}`:'⏰ Tu prueba gratis terminó'} · Después se activará el cobro automático de tu suscripción.</div>`;
+}
+/* --- ficha pública del coach (catálogo) --- */
+async function openCoachProfile(){
+  let doc={};try{const {data}=await SB.from('pt_coach_profiles').select('doc,public').eq('email',ME.email).maybeSingle();doc={...(data&&data.doc||{}),_pub:data?data.public:true}}catch(e){}
+  S.ui.cp={...{name:ME.name||'',title:'',bio:'',specialties:[],city:'',modality:'En línea',prices:[],web:'',instagram:'',photo:''},...doc};renderCoachProfile();
+}
+function renderCoachProfile(){
+  const d=S.ui.cp;
+  openModal(`<div class="modal"><div class="modal-h"><h3>${ic('coach',18)} Mi perfil de coach</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
+  <div class="modal-b"><div class="muted" style="font-size:12.5px;margin-bottom:10px">Así te verán los clientes en el catálogo de coaches.</div>
+    <div class="row" style="flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:10px">${d.photo?`<img class="cc-ph" src="${d.photo}" alt="">`:`<div class="cc-ph cc-in" style="background:${colorFor(ME.email)}">${initials(d.name||ME.email)}</div>`}<label class="btn soft sm upl">📷 ${d.photo?'Cambiar foto':'Subir foto'}<input type="file" accept="image/*" onchange="cpPhoto(this.files[0])"></label>${d.photo?`<button class="btn ghost sm" onclick="cpCollect();S.ui.cp.photo='';renderCoachProfile()">Quitar</button>`:''}</div>
+    <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:220px"><label>Nombre público</label><input id="cp_n" value="${esc(d.name)}"></div><div class="field" style="min-width:220px"><label>Título</label><input id="cp_t" value="${esc(d.title)}" placeholder="Ej. Entrenador de fuerza y nutrición"></div></div>
+    <div class="field"><label>Especialidades (separadas por coma)</label><input id="cp_s" value="${esc((d.specialties||[]).join(', '))}" placeholder="Hipertrofia, Running, Funcional…"></div>
+    <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:180px"><label>Ciudad</label><input id="cp_c" value="${esc(d.city)}"></div><div class="field" style="min-width:180px"><label>Modalidad</label><select id="cp_m">${['En línea','Presencial','En línea y presencial'].map(m=>`<option ${m===d.modality?'selected':''}>${m}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Sobre mí</label><textarea id="cp_b" rows="4" placeholder="Tu experiencia, certificaciones y cómo trabajas">${esc(d.bio)}</textarea></div>
+    <div class="field"><label>Precios (MXN)</label>${(d.prices||[]).map((p,i)=>`<div class="row" style="gap:8px;margin-bottom:6px"><input class="inp cp_pl" value="${esc(p.label)}" placeholder="Servicio" style="flex:2"><input class="inp cp_pp" type="number" min="0" value="${esc(p.price)}" placeholder="$" style="flex:1"><button class="btn ghost sm" onclick="cpCollect();S.ui.cp.prices.splice(${i},1);renderCoachProfile()">${ic('trash',13)}</button></div>`).join('')}<button class="btn soft sm" onclick="cpCollect();S.ui.cp.prices.push({label:'',price:''});renderCoachProfile()">${ic('plus',13)} Agregar precio</button></div>
+    <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:220px"><label>Sitio web</label><input id="cp_w" value="${esc(d.web)}" placeholder="https://"></div><div class="field" style="min-width:180px"><label>Instagram</label><input id="cp_i" value="${esc(d.instagram)}" placeholder="@usuario"></div></div>
+    <label class="chk"><input type="checkbox" id="cp_pub" ${d._pub!==false?'checked':''}> Mostrarme en el catálogo de coaches</label>
+  </div><div class="modal-f"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveCoachProfile()">${ic('check',15)} Guardar</button></div></div>`);
+}
+function cpCollect(){const d=S.ui.cp;if(!document.getElementById('cp_n'))return;d.name=gv('cp_n');d.title=gv('cp_t');d.specialties=gv('cp_s').split(',').map(s=>s.trim()).filter(Boolean);d.city=gv('cp_c');d.modality=gv('cp_m');d.bio=gv('cp_b');d.web=gv('cp_w');d.instagram=gv('cp_i');d._pub=document.getElementById('cp_pub').checked;
+  const ls=[...document.querySelectorAll('.cp_pl')],ps=[...document.querySelectorAll('.cp_pp')];d.prices=ls.map((l,i)=>({label:l.value.trim(),price:+ps[i].value||0}))}
+async function cpPhoto(f){if(!f||!/^image\//.test(f.type)){toast('Elige una imagen');return}cpCollect();try{S.ui.cp.photo=await shrinkToSquare(f,360);renderCoachProfile()}catch(e){toast('No se pudo leer la foto')}}
+async function saveCoachProfile(){
+  cpCollect();const d={...S.ui.cp},pub=d._pub!==false;delete d._pub;d.prices=(d.prices||[]).filter(p=>p.label);if(!d.name){toast('Escribe tu nombre público');return}
+  const {error}=await SB.from('pt_coach_profiles').upsert({email:ME.email,doc:d,public:pub,updated_at:new Date().toISOString()});
+  if(error){toast('No se pudo guardar: '+error.message);return}closeModal();toast(pub?'Perfil guardado · visible en el catálogo':'Perfil guardado · oculto del catálogo');
+}
+/* --- crear cuenta con rol --- */
+function renderSignup(msg){
+  const r=S&&S.ui?null:null,role=window.__suRole||'athlete';
+  document.getElementById('app').innerHTML=`<div style="max-width:440px;margin:40px auto;padding:0 16px"><div class="card" style="padding:24px">
+    <h2 style="margin:0 0 4px">Crear cuenta</h2><p class="muted" style="margin:0 0 14px;font-size:13px">¿Cómo vas a usar ProTrainerPlus?</p>
+    ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
+    <div class="role-pick">
+      <button type="button" class="role ${role==='athlete'?'on':''}" onclick="window.__suRole='athlete';suKeep();renderSignup()"><span class="re">🏃</span><b>Soy atleta</b><small>Quiero un coach y mi plan de entrenamiento</small></button>
+      <button type="button" class="role ${role==='coach'?'on':''}" onclick="window.__suRole='coach';suKeep();renderSignup()"><span class="re">🏋️</span><b>Soy coach</b><small>Quiero gestionar a mis clientes · 14 días gratis</small></button>
+    </div>
+    <form onsubmit="event.preventDefault();doSignup()">
+      <div class="field"><label>Nombre completo</label><input id="su_n" required autocomplete="name" value="${esc(window.__su?.n||'')}"></div>
+      <div class="field"><label>Correo</label><input id="su_e" type="email" required autocomplete="email" inputmode="email" value="${esc(window.__su?.e||'')}"></div>
+      <div class="field"><label>Contraseña (mínimo 8 caracteres)</label><input id="su_p" type="password" required minlength="8" autocomplete="new-password"></div>
+      <label class="chk" style="font-size:12.5px;margin:4px 0 12px"><input type="checkbox" id="su_ok" required> <span>Leí el <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">aviso de privacidad</a>${role==='coach'?' y entiendo que al terminar la prueba de 14 días se activará el cobro de mi suscripción':''}.</span></label>
+      <button class="btn primary full" id="su_b">${role==='coach'?'Crear mi cuenta de coach':'Crear mi cuenta'}</button></form>
+    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Ya tienes cuenta? <a href="#" onclick="event.preventDefault();renderLoginV2()" style="color:var(--green-d)">Entrar</a></p></div></div>`;
+}
+function suKeep(){const n=document.getElementById('su_n'),e=document.getElementById('su_e');window.__su={n:n?n.value:'',e:e?e.value:''}}
+async function doSignup(){
+  const role=window.__suRole||'athlete',name=gv('su_n').trim(),email=gv('su_e').trim().toLowerCase(),pw=document.getElementById('su_p').value;
+  if(pw.length<8){renderSignup('La contraseña debe tener al menos 8 caracteres');return}
+  const b=document.getElementById('su_b');b.disabled=true;b.textContent='Creando cuenta…';
+  const {data,error}=await SB.auth.signUp({email,password:pw,options:{data:{full_name:name,role},emailRedirectTo:CONFIG.V2_URL}});
+  if(error){suKeep();renderSignup(/already|registered|exists/i.test(error.message)?'Ese correo ya tiene cuenta. Entra con tu contraseña.':error.message);return}
+  if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length){suKeep();renderSignup('Ese correo ya tiene cuenta. Entra con tu contraseña.');return}
+  window.__su=null;
+  if(data.session){await start(data.user);return}
+  document.getElementById('app').innerHTML=`<div style="max-width:440px;margin:60px auto;padding:0 16px"><div class="card" style="padding:26px;text-align:center"><div style="font-size:44px">📩</div><h2 style="margin:8px 0">Revisa tu correo</h2><p class="muted">Te enviamos un enlace a <b>${esc(email)}</b> para confirmar tu cuenta. Ábrelo y entra con tu contraseña.${role==='coach'?' Tu prueba gratis de 14 días empieza al entrar por primera vez.':''}</p><button class="btn primary" onclick="renderLoginV2()">Ir a entrar</button></div></div>`;
+}
+function myCoachHTML(){
+  if(!MT||IS_COACH||!ROLE.linked)return '';const c=coachCard(ROLE.coach_email);if(!c)return '';
+  return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="font-weight:700;margin-bottom:8px">🏋️ Tu coach</div>${coachCardHTML(c,'mine')}</div>`;
+}
+
 window.addEventListener('hashchange',()=>{if(/demo=/.test(location.hash))location.reload()});
 async function boot(){
   const dm=await demoCheck();if(dm==='bad')return;if(dm)demoSetup();
-  if(/type=(recovery|signup|invite|magiclink|email_change)|error_description|crear-cuenta/.test(location.hash)){location.replace('/anterior/'+location.hash);return}
+  if(/type=recovery|error_description/.test(location.hash)){location.replace('/anterior/'+location.hash);return}
+  const wantSignup=/crear-cuenta/.test(location.hash);if(wantSignup)history.replaceState(null,'',location.pathname+location.search);
   if(!window.supabase){document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">No se pudo cargar la conexión. Revisa tu internet y recarga la página.</div>';return}
   SB=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{global:{fetch:sbFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
-  try{const {data}=await SB.auth.getSession();if(!data.session)return renderLoginV2();await start(data.session.user)}
+  try{const {data}=await SB.auth.getSession();if(!data.session)return wantSignup?renderSignup():renderLoginV2();await start(data.session.user)}
   catch(e){renderLoginV2(e.message)}
 }
 async function start(u){
   ME={email:String(u.email||'').toLowerCase(),id:u.id,name:(u.user_metadata||{}).full_name||''};
   document.getElementById('whoAmI').textContent=ME.email;document.getElementById('btnLogout').style.display='';
   document.getElementById('app').innerHTML='<div class="empty-state" style="padding:80px 20px">Cargando tu información…</div>';
-  try{const {data:c,error}=await SB.rpc('is_coach');if(error)throw error;IS_COACH=!!c;
-    const op=document.getElementById('oldPortal');if(op){op.textContent='Portal anterior';op.style.display=IS_COACH?'':'none'}
-    await loadData();if(DEMO.on&&IS_COACH&&!DEMO.db.seeded)seedDemo();renderApp();setSync('ok')}
-  catch(e){console.error(e);document.getElementById('app').innerHTML=`<div class="card" style="max-width:540px;margin:60px auto;padding:22px"><h3 style="margin-top:0">No se pudo cargar</h3><p class="muted">${esc(e.message||String(e))}</p><p class="muted" style="font-size:12px">Si el mensaje menciona una tabla "pt_", falta correr el script de instalación (supabase-v2.sql) en Supabase.</p><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`}
+  try{await loadRole(u);
+    const op=document.getElementById('oldPortal');if(op){op.textContent='Portal anterior';op.style.display=IS_COACH&&IS_ADMIN?'':'none'}
+    await loadData();await loadCoachRequests();if(!IS_COACH)await loadCatalog();if(DEMO.on&&IS_COACH&&!DEMO.db.seeded)seedDemo();renderApp();setSync('ok')}
+  catch(e){console.error(e);if(String(e.message)==='COACH_PENDING'){document.getElementById('app').innerHTML=`<div class="card" style="max-width:500px;margin:60px auto;padding:26px;text-align:center"><div style="font-size:44px">🏋️</div><h2>Estamos activando tu cuenta de coach</h2><p class="muted">Tu registro quedó guardado. En cuanto esté lista podrás entrar a tu panel y empezar tus 14 días gratis. Si tienes dudas escríbenos a coach@headcoachleonardopablo.com.</p></div>`;return}document.getElementById('app').innerHTML=`<div class="card" style="max-width:540px;margin:60px auto;padding:22px"><h3 style="margin-top:0">No se pudo cargar</h3><p class="muted">${esc(e.message||String(e))}</p><p class="muted" style="font-size:12px">Si el mensaje menciona una tabla "pt_", falta correr el script de instalación (supabase-v2.sql) en Supabase.</p><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`}
 }
 function renderLoginV2(msg){
   if(DEMO.on){document.getElementById('app').innerHTML=demoLoginHTML(msg);return}
@@ -1302,7 +1478,7 @@ function renderLoginV2(msg){
     <h2 style="margin:0 0 4px">Entrar</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Usa el mismo correo y contraseña de tu portal de atletas.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="email" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="/anterior/" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="/anterior/#crear-cuenta" style="color:var(--green-d)">Créala</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="/anterior/" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="#" onclick="event.preventDefault();renderSignup()" style="color:var(--green-d);font-weight:700">Crear cuenta</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
 }
 async function doLogin(){const b=document.getElementById('lg_b');b.disabled=true;b.textContent='Entrando…';
   const {data,error}=await SB.auth.signInWithPassword({email:gv('lg_e').toLowerCase(),password:document.getElementById('lg_p').value});
@@ -1315,8 +1491,12 @@ function genPassword(){const t='abcdefghjkmnpqrstuvwxyz',e='23456789',s=t+t.toUp
 async function createAccount(name,email){
   const tmp=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{global:{fetch:sbFetch},auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'sb-alta-atleta-v2'}});
   const pw=genPassword(),{data,error}=await tmp.auth.signUp({email,password:pw,options:{data:{full_name:name}}});
-  if(error){if(/already registered|already been registered|already exists/i.test(error.message))return {existed:true};throw error}
-  if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length)return {existed:true};
+  if(error){if(/already registered|already been registered|already exists/i.test(error.message)){if(MT){const {data:st}=await SB.rpc('pt_coach_add_client',{p_athlete:email});if(st==='invited')return {existed:true,invited:true}}return {existed:true}}throw error}
+  const existed=!!(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length);
+  if(MT){const {data:st,error:le}=await SB.rpc('pt_coach_add_client',{p_athlete:email});if(le)throw le;
+    if(st==='invited')return {existed:true,invited:true};
+    if(!existed){try{await SB.rpc('pt_coach_confirm_email',{p_email:email})}catch(e){}}}
+  if(existed)return {existed:true};
   try{await SB.rpc('coach_confirm_email',{target_email:email})}catch(e){}
   return {existed:false,password:pw};
 }
@@ -1403,6 +1583,7 @@ function pushNotif(aid,text){S.notifs.unshift({id:uid(),athleteId:aid,text,ts:Da
 ========================================================= */
 function renderTop(){
   document.getElementById('logoMark').innerHTML=ic('logo',18);
+  {let tb=document.getElementById('trialBar');if(!tb){tb=document.createElement('div');tb.id='trialBar';document.querySelector('header.top').before(tb)}tb.innerHTML=S?trialBarHTML():''}
   if(!S||!IS_COACH){document.getElementById('modeSeg').innerHTML='';return}
   const m=S.ui.mode;
   document.getElementById('modeSeg').innerHTML=
@@ -1469,7 +1650,8 @@ function renderApp(){
   renderTop();
   if(privacyBlocked()){renderPrivacyGate();return}
   const app=document.getElementById('app'), m=IS_COACH?S.ui.mode:'athlete';
-  if(IS_COACH&&!S.athletes.length&&m!=='athlete'){app.innerHTML=`<div class="coach"><aside class="side"><div class="side-h"><span>Mis clientes</span><span class="count">0</span></div></aside><section class="main">${secnavHTML()}${S.ui.section==='biblioteca'?libraryHTML():S.ui.section==='plantillas'?plansHTML():`<div class="card empty-state" style="padding:40px">${ic('users',30)}<h3>Aún no tienes clientes</h3><button class="btn primary" onclick="openNewAthlete()">${ic('userplus',15)} Añadir cliente</button></div>`}</section></div>`;return}
+  if(needsCoach()){app.innerHTML=catalogHTML();return}
+  if(IS_COACH&&!S.athletes.length&&m!=='athlete'){app.innerHTML=`<div class="coach"><aside class="side"><div class="side-h"><span>Mis clientes</span><span class="count">0</span></div>${reqsSideHTML()}</aside><section class="main">${secnavHTML()}${S.ui.section==='biblioteca'?libraryHTML():S.ui.section==='plantillas'?plansHTML():`<div class="card empty-state" style="padding:40px">${ic('users',30)}<h3>Aún no tienes clientes</h3><button class="btn primary" onclick="openNewAthlete()">${ic('userplus',15)} Añadir cliente</button></div>`}</section></div>`;return}
   if(!IS_COACH&&!S.athletes.length){app.innerHTML='<div class="empty-state" style="padding:80px 20px">Sin datos.</div>';return}
   const keep={};app.querySelectorAll('.pane').forEach((p,i)=>keep[i]=p.scrollTop);
   if(m==='coach') app.innerHTML=coachHTML(false);
@@ -1518,6 +1700,7 @@ function coachHTML(compact){
   return `<div class="coach ${compact?'compact':''}">
   <aside class="side">
     <div class="side-h"><span>Mis clientes</span><span class="count">${S.athletes.length}</span></div>
+    ${reqsSideHTML()}
     <input class="inp" placeholder="Buscar cliente…" value="${esc(S.ui.q||'')}" oninput="S.ui.q=this.value;renderSideList()">
     <div id="sideList" style="display:flex;flex-direction:column;gap:4px">${sideListHTML()}</div>
     <button class="btn ghost full" onclick="openNewAthlete()">${ic('plus',15)} Nuevo cliente</button>
@@ -1828,6 +2011,7 @@ function profilePageHTML(a){
     <div class="c"><div class="l">Alimentación</div>${v(kc?fmtN(kc):null,kc?'kcal/día':'')}</div>
   </div></div>
   <div class="muted" style="font-size:12px;text-align:center;margin:4px 8px 12px">Estos datos los registra tu coach. Si algo no es correcto, <a href="#" onclick="event.preventDefault();openAthChat()" style="color:var(--green-d);font-weight:600">avísale por mensaje</a>.</div>
+  ${myCoachHTML()}
   ${privProfileHTML(a.id)}
   ${delZoneHTML()}`;
 }
@@ -1888,6 +2072,7 @@ function saveAthlete(id){
   const em=e.toLowerCase();if(S.athletes.some(x=>x.id===em)){toast('Ese correo ya está en tus clientes');return}
   const pid=gv('na_p'),btn=document.querySelector('#modalRoot .modal-f .btn.primary');btn.disabled=true;btn.textContent='Creando acceso…';
   createAccount(n,em).then(r=>{
+    if(r.invited){closeModal();openModal(`<div class="modal sm"><div class="modal-h"><h3>💌 Invitación enviada</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b"><p style="margin-top:0"><b>${esc(em)}</b> ya tenía cuenta en ProTrainerPlus, así que le enviamos una invitación.</p><p class="muted">Cuando la acepte desde su app, aparecerá en tu lista de clientes. Mientras tanto la ves en «Solicitudes».</p></div><div class="modal-f"><button class="btn primary" onclick="closeModal()">Entendido</button></div></div>`);loadCoachRequests().then(renderApp);return}
     const a={...data,id:em,email:em,color:colorFor(em)};
     S.athletes.push(a);S.ui.athleteId=a.id;
     if(data.gender==='Mujer'&&S.ui.newCyc){const n=S.ui.newCyc;cycWrite(a.id,{tracking:true,last:addDays(TODAY,-(n-1)),plen:Math.max(5,n)})}S.ui.newCyc=0;S.ui.section='clientes';S.ui.coachTab='plan';
@@ -2457,6 +2642,7 @@ function secnavHTML(){
     <button class="sn ${sec==='biblioteca'?'on':''}" onclick="S.ui.section='biblioteca';commit()">${ic('book',15)} Biblioteca de ejercicios <small>${S.library.length}</small></button>
     <button class="sn ${sec==='plantillas'?'on':''}" onclick="S.ui.section='plantillas';commit()">${ic('layers',15)} Plantillas de plan <small>${S.plans.length}</small></button>
     <span class="sp"></span>
+    ${MT?`<button class="btn ghost" onclick="openCoachProfile()">${ic('coach',15)} Mi perfil de coach</button>`:''}
     <button class="btn primary" onclick="openNewAthlete()">${ic('userplus',15)} Añadir cliente</button>
   </div>`;
 }
@@ -2502,7 +2688,7 @@ function openExercise(id){
     <div class="field"><label>Notas técnicas</label><textarea id="x_notes" placeholder="Claves de ejecución, errores comunes…">${esc(x.notes||'')}</textarea></div>
   </div><div style="min-width:240px"><div class="field"><label>Vista previa</label><div id="x_prev" class="ytprev empty">Pega un link para ver la vista previa</div></div>
   ${id?`<div class="muted" style="font-size:12px">Origen: ${(x.src||[]).map(esc).join(', ')||'—'}</div>`:''}</div></div></div>
-  <div class="modal-f">${id?`<button class="btn danger sm" onclick="delExercise('${id}')">${ic('trash',14)} Eliminar</button><span style="flex:1"></span>`:''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveExercise('${id||''}')">Guardar</button></div></div>`);
+  <div class="modal-f">${id&&(!MT||IS_ADMIN)?`<button class="btn danger sm" onclick="delExercise('${id}')">${ic('trash',14)} Eliminar</button><span style="flex:1"></span>`:''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveExercise('${id||''}')">Guardar</button></div></div>`);
   videoPreview('x_v','x_prev');
 }
 function saveExercise(id){
