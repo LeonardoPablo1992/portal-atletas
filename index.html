@@ -752,6 +752,15 @@ details.aero-v summary .n{background:#e0f2fe}
 .del-link:hover{background:#fff7ed}
 .del-modal .modal-b{padding:16px}
 .del-modal{background:#fffaf5}
+.lib-groups{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+details.lgrp{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+details.lgrp summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-weight:700}
+details.lgrp summary::-webkit-details-marker{display:none}
+details.lgrp[open] summary{background:var(--green-50);border-bottom:1px solid var(--green-200)}
+.lg-c{background:var(--green);color:#fff;border-radius:999px;font-size:11px;padding:1px 8px}
+.lg-v{flex:1;font-size:11px;font-weight:600;color:#e11d48;display:inline-flex;align-items:center;gap:4px}
+details.lgrp .chev{transition:.2s;color:var(--muted)}
+details.lgrp[open] .chev{transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -855,7 +864,14 @@ const TEMPLATES={
     {name:'Core',ex:[['Plancha','3','40 s','30 s']]}]}
 };
 const GROUPS=['Pecho','Espalda','Hombro','Bíceps','Tríceps','Cuádriceps','Glúteo','Isquiotibiales','Aductores','Pantorrilla','Core','Full body','Cardio','Movilidad'];
-const TTYPES=['Hipertrofia','Fuerza','Potencia','Activación','Accesorio','Core','Cardio','Movilidad'];
+const TTYPES=['Fuerza','Aeróbico','Funcional','Agilidad','Pliometría','Complex'];
+function normType(t){const s=String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return /cardio|aerob/.test(s)?'Aeróbico':/pliom|salto|jump/.test(s)?'Pliometría':/agil/.test(s)?'Agilidad':/complex/.test(s)?'Complex':/funcional|movilidad/.test(s)?'Funcional':'Fuerza'}
+/* grupo muscular por nombre del ejercicio (y si no, por el día) */
+const GROUP_KW=[[/pantorr|gemel|calf|calv|talon/,'Pantorrilla'],[/aductor|costurera|adduct/,'Aductores'],[/abduct|gluteo|glute|hip thrust|thrust|patada|kick|puente/,'Glúteo'],[/femoral|isquio|leg curl|rumano|rdl|good morning|nordic/,'Isquiotibiales'],[/sentadilla|squat|prensa|leg press|extension de cuad|leg extension|zancada|lunge|bulgara|hack|sissy|cuadri/,'Cuádriceps'],[/triceps|tricep|frances|pushdown|fondos|dips|copa|skull/,'Tríceps'],[/elevacion lateral|lateral raise|militar|shoulder|hombro|arnold|face pull|pajaro|deltoid|overhead|reverse fly|rear delt/,'Hombro'],[/remo|row|jalon|pull ?down|dominada|pull ?up|chin|espalda|back|pullover/,'Espalda'],[/press banca|banca|bench|pecho|chest|apertura|fly|peck|cruce|crossover|lagartija|push ?up/,'Pecho'],[/curl|biceps|bicep|martillo|hammer|predicador/,'Bíceps'],[/abdom|crunch|plancha|plank|core|oblicu|sit ?up|rueda|hollow|dead bug/,'Core'],[/caminadora|bici|eliptica|escaladora|assault|cardio|correr|trote|hiit|liss/,'Cardio'],[/movilidad|estiramiento|stretch|mobility/,'Movilidad']];
+function guessGroupEx(name,day){const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();for(const [re,g] of GROUP_KW)if(re.test(n))return g;return guessGroup(day||'')}
+/* alta única en la biblioteca: la usan planes, sesiones, Excel y la carga desde archivo */
+function libAdd(name,ctx,video,cardio){const nm=String(name||'').trim();if(!nm)return false;const x=libFind(nm);if(x){if(video&&!x.video)x.video=video;return false}
+  S.library.push({id:uid(),name:nm,group:cardio?'Cardio':guessGroupEx(nm,ctx),type:cardio?'Aeróbico':'Fuerza',video:video||'',notes:'',src:['Coach']});return true}
 const CATS=['Activación / rezagado','Principal','Complementario','Aeróbico / cardio'];
 const AERO=CATS[3];
 const DEFAULT_DAYS=['Hams & Glutes','Shoulder & Tricep','Quads','Back & Bicep','Chest'];
@@ -1041,7 +1057,7 @@ function seedCoachData(plansOld){
   if(!S.plans.length){S.plans=Object.entries(SEED_PLANS).map(([src,days])=>({id:uid(),name:`Plan base · ${src}`,src,desc:'',wpp:2,days:Object.entries(days).map(([name,rows])=>({name,rows:rows.map(r=>({name:r.n,cat:r.c,ph:r.ph,tempo:r.tp,rir:r.rir,rest:r.rs,video:''}))}))}));ch=true}
   const CM={rz:CATS[0],pr:CATS[1],ac:CATS[2]};
   plansOld.forEach(p=>{const d=p.data;if(!d||!d.days||typeof d.days!=='object')return;const src=p.athlete_name||p.athlete_email;
-    Object.entries(d.days).forEach(([dk,day])=>((day&&day.rows)||[]).forEach(r=>{if(!r||!r.name)return;const nm=String(r.name).trim();if(nm&&!libFind(nm)){S.library.push({id:uid(),name:nm,group:guessGroup(dk+' '+((day&&day.label)||'')),type:r.cat==='ac'?'Accesorio':r.cat==='rz'?'Activación':'Hipertrofia',video:'',notes:'',src:[src]});ch=true}}));
+    Object.entries(d.days).forEach(([dk,day])=>((day&&day.rows)||[]).forEach(r=>{if(!r||!r.name)return;const nm=String(r.name).trim();if(nm&&libAdd(nm,dk+' '+((day&&day.label)||'')))ch=true}));
     if(!S.plans.some(t=>t.src===src)){const days=Object.entries(d.days).map(([dk,day])=>({name:(day&&day.label)||dk,rows:((day&&day.rows)||[]).filter(r=>r&&r.name).map(r=>{const ph=r.sets!=null&&r.sets!==''?[String(r.sets),String(r.reps??'')]:null;return {name:String(r.name).trim(),cat:CM[r.cat]||CATS[1],ph:[0,1,2,3].map(()=>ph&&[...ph]),tempo:r.tempo||'',rir:r.rir??'',rest:r.rest||'',video:''}})})).filter(x=>x.rows.length);
       if(days.length){S.plans.push({id:uid(),name:`Plan base · ${src}`,src,desc:p.title||'',wpp:2,days});ch=true}}
   });
@@ -1051,7 +1067,7 @@ function seedCoachData(plansOld){
     if(!r)return;
     const tpl={id:uid(),name:`Plan actual · ${a.name}`,src:a.name,athleteId:a.id,imported:true,desc:r.label?`${r.label} · importado de su plan del portal`:'Importado de su plan del portal',wpp:1,phase:0,days:r.days};
     S.plans.push(tpl);a.plan={...JSON.parse(JSON.stringify(tpl)),tplId:tpl.id};
-    r.days.forEach(d=>d.rows.forEach(x=>{if(x.name&&!libFind(x.name))S.library.push({id:uid(),name:x.name,group:guessGroup(d.name),type:x.cat===CATS[0]?'Activación':x.cat===CATS[2]?'Accesorio':'Hipertrofia',video:'',notes:'',src:[a.name]})}));
+    r.days.forEach(d=>d.rows.forEach(x=>{if(x.name)libAdd(x.name,d.name,'',x.cat===AERO)}));
     ch=true;
   });
   S.athletes.forEach(a=>{const op=OLDPLANS[a.id];if(a.nutImp||!op||!op.data||!op.data.html)return;
@@ -1062,6 +1078,7 @@ function seedCoachData(plansOld){
     if(f.goal&&!a.goal)a.goal=f.goal;if(r.nutrition&&r.nutrition.kcalTarget&&!a.kcalTarget)a.kcalTarget=r.nutrition.kcalTarget;
     if(f.weight&&!S.evo.some(e=>e.athleteId===a.id&&e.peso!=null))S.evo.push({id:uid(),athleteId:a.id,date:op.created_at?fmt(new Date(op.created_at)):TODAY,peso:f.weight});
   });
+  S.library.forEach(x=>{const t=normType(x.type);if(t!==x.type){x.type=t;ch=true}if(!x.group||x.group==='Full body'){const g=guessGroupEx(x.name,'');if(g&&g!=='Full body'&&g!==x.group){x.group=g;ch=true}}});
   if(ch)save();
 }
 /* Lee el plan de alimentación y los datos del atleta (peso, GEB, kcal…) de los planes HTML actuales */
@@ -1954,7 +1971,7 @@ function saveTask(type){
   else if(type==='sesion') created.push({...base,id:uid(),title:gv('f_stitle')||`Sesión ${gv('f_smode').toLowerCase()}`,data:{mode:gv('f_smode'),time:gv('f_stime'),dur:gv('f_sdur'),place:gv('f_splace')}});
   else if(type==='mensaje'){if(!gv('f_mtext')){toast('Escribe el mensaje');return}created.push({...base,id:uid(),title:'Mensaje programado',data:{text:gv('f_mtext'),time:gv('f_mtime')}})}
   else if(type==='formulario'){if(ds<TODAY)return;const f=gv('f_form');created.push({...base,id:uid(),title:FORMS[f].name,data:{form:f,note:gv('f_fnote')}})}
-  if(type==='entrenamiento')created.forEach(t=>(t.data.blocks||[]).forEach(b=>b.exercises.forEach(e=>{const nm=String(e.name||'').trim();if(!nm)return;const x=libFind(nm);if(!x)S.library.push({id:uid(),name:nm,group:guessGroup(t.title),type:'Hipertrofia',video:e.video||'',notes:'',src:['Coach']});else if(e.video&&!x.video)x.video=e.video})));
+  if(type==='entrenamiento')created.forEach(t=>(t.data.blocks||[]).forEach(b=>b.exercises.forEach(e=>libAdd(e.name,t.title,e.video,!!e.cardio))));
   S.tasks.push(...created);
   const first=created[0];
   pushNotif(aid,`Tu coach agendó «${first.title}» para el ${longDate(first.date)}`);
@@ -2271,7 +2288,7 @@ function submitForm(tid,idx){
    VIDEO (solo se guarda el link; se reproduce embebido)
 ========================================================= */
 function playVideo(url,title,taskId){
-  const info=vInfo(url);if(!info){toast('Link de video no válido');return}
+  const info=vInfo(url);if(!info){if(/^https?:\/\//i.test(String(url||'').trim())){window.open(String(url).trim(),'_blank','noopener');return}toast('Link de video no válido');return}
   document.getElementById('videoRoot').innerHTML=`<div class="ov video" onmousedown="if(event.target===this)closeVideo()"><div class="video-box">
     <div class="vh">${ic('video',22)}<h4>${esc(title||'Video')}</h4><button class="icon-btn" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff" onclick="closeVideo()">${ic('x',18)}</button></div>
     <div class="frame">${vEmbed(info,true)}</div>
@@ -2366,12 +2383,11 @@ function secnavHTML(){
 /* ---------- biblioteca ---------- */
 function libraryHTML(){
   const srcs=[...new Set(S.library.flatMap(x=>x.src||[]))].filter(s=>s!=='Coach');
-  return `<div class="src-banner">${ic('book',18)}<div><b>${S.library.length} ejercicios</b> reunidos de los planes de ${srcs.map(esc).join(', ')}. Agrega el video una vez y aparece en todos los entrenamientos que usen ese ejercicio.</div></div>
+  return `<div class="src-banner">${ic('book',18)}<div><b>${S.library.length} ejercicios</b> por grupo muscular. Se actualiza sola cada vez que agregas ejercicios en un plan, una sesión o un Excel. Agrega el video una vez y aparece en todos los entrenamientos que usen ese ejercicio.</div></div>
   <div class="card"><div class="toolbar">
     <div class="inrow" style="flex:1;min-width:200px"><span class="pre" style="color:var(--muted)">${ic('search',17)}</span><input type="search" id="lib_q" placeholder="Buscar ejercicio o grupo muscular…" value="${esc(S.ui.lq||'')}" oninput="S.ui.lq=this.value;S.ui.llim=25;renderLibTable()"></div>
     <select class="inp" onchange="S.ui.lg=this.value;S.ui.llim=25;renderLibTable()"><option value="">Todos los grupos</option>${GROUPS.map(g=>`<option ${S.ui.lg===g?'selected':''}>${g}</option>`).join('')}</select>
     <select class="inp" onchange="S.ui.lt=this.value;S.ui.llim=25;renderLibTable()"><option value="">Todos los tipos</option>${TTYPES.map(g=>`<option ${S.ui.lt===g?'selected':''}>${g}</option>`).join('')}</select>
-    <select class="inp" onchange="S.ui.lv=this.value;S.ui.llim=25;renderLibTable()"><option value="">Con y sin video</option><option value="si" ${S.ui.lv==='si'?'selected':''}>Con video</option><option value="no" ${S.ui.lv==='no'?'selected':''}>Sin video</option></select>
     <button class="btn primary" onclick="openExercise()">${ic('plus',15)} Ejercicio</button>
   </div><div class="scroll-x" id="libTable">${libTableHTML()}</div></div>`;
 }
@@ -2379,29 +2395,28 @@ function usageMap(){const m={};S.plans.forEach(p=>p.days.forEach(d=>d.rows.forEa
 const normTxt=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const SYN={sentadilla:['squat'],squat:['sentadilla'],jalon:['pull down','pulldown','lat '],remo:['row'],row:['remo'],banca:['bench'],bench:['banca'],'peso muerto':['dl','deadlift'],zancada:['lunge'],lunge:['zancada'],'elevacion lateral':['lateral raise'],femoral:['leg curl'],pantorrilla:['calf','calv','talon'],talon:['calf','calv'],dominada:['pull up','chin'],fondos:['dips'],dips:['fondos'],apertura:['fly'],fly:['apertura'],prensa:['leg press'],hombro:['shoulder'],pecho:['chest'],espalda:['back','row','pull'],gluteo:['glute','hip thrust','kick'],triceps:['tricep','pushdown','dips','frances'],biceps:['curl'],abdomen:['abs','crunch','sit up'],cuadriceps:['quad','squat','leg extension']};
 function qTerms(q){const t=[q];Object.entries(SYN).forEach(([k,v])=>{if(q.includes(k))t.push(...v)});q.split(/\s+/).filter(w=>w.length>2).forEach(w=>{t.push(w);(SYN[w]||[]).forEach(x=>t.push(x))});return [...new Set(t)]}
-function libTableHTML(){
-  const q=normTxt((S.ui.lq||'').trim()),active=q.length>=2||S.ui.lg||S.ui.lt||S.ui.lv;
-  if(!active) return `<div class="lib-empty">${ic('search',28)}<div style="margin-top:6px">Escribe al menos 2 letras o elige un grupo muscular para buscar entre <b>${S.library.length}</b> ejercicios.</div>
-    <div class="chips">${GROUPS.filter(g=>S.library.some(x=>x.group===g)).map(g=>`<button class="btn soft sm" onclick="S.ui.lg='${g}';S.ui.llim=25;renderApp()">${g} · ${S.library.filter(x=>x.group===g).length}</button>`).join('')}</div></div>`;
-  const uses=usageMap(),lim=S.ui.llim||25;
-  const L=S.library.filter(x=>(q.length<2||(q.includes(' ')?q.split(/\s+/).filter(w=>w.length>2).every(w=>[w,...(SYN[w]||[])].some(term=>normTxt(x.name).includes(term))):qTerms(q).some(term=>normTxt(x.name).includes(term)))||normTxt(x.group).includes(q)||(q.length>=5&&normTxt(x.type).startsWith(q)))&&(!S.ui.lg||x.group===S.ui.lg)&&(!S.ui.lt||x.type===S.ui.lt)&&(!S.ui.lv||(S.ui.lv==='si')===!!x.video));
-  const shown=L.slice(0,lim);
-  return `<table class="tbl"><thead><tr><th>Ejercicio</th><th>Grupo muscular</th><th>Tipo de entrenamiento</th><th>Video · vista previa</th><th>En plantillas</th><th></th></tr></thead><tbody>
-  ${shown.map(x=>`<tr><td style="font-weight:600">${esc(x.name)}</td><td><span class="gtag">${esc(x.group)}</span></td><td><span class="ttag">${esc(x.type)}</span></td>
-   <td>${x.video?(vInfo(x.video)?.thumb?`<img class="lthumb" loading="lazy" alt="" title="Ver video" src="${vInfo(x.video).thumb}" onclick="playVideo('${jsq(x.video)}','${jsq(x.name)}')">`:`<button class="vchip" onclick="playVideo('${jsq(x.video)}','${jsq(x.name)}')">${ic('play',11,true)} Ver</button>`):`<button class="vchip none" onclick="openExercise('${x.id}')">+ Agregar</button>`}</td>
+function libRowHTML(x,uses){return `<tr><td style="font-weight:600">${esc(x.name)}</td><td><span class="ttag">${esc(x.type)}</span></td>
+   <td>${x.video?(vInfo(x.video)?.thumb?`<img class="lthumb" loading="lazy" alt="" title="Ver video" src="${vInfo(x.video).thumb}" onclick="playVideo('${jsq(x.video)}','${jsq(x.name)}')">`:`<button class="vchip" onclick="playVideo('${jsq(x.video)}','${jsq(x.name)}')">${ic('play',11,true)} Ver video</button>`):`<button class="vchip none" onclick="openExercise('${x.id}')">+ Agregar link</button>`}</td>
    <td class="muted">${uses[x.name.toLowerCase()]||0}</td>
-   <td><div class="row-acts"><button class="mini-btn" title="Editar" onclick="openExercise('${x.id}')">${ic('edit',14)}</button></div></td></tr>`).join('')||`<tr><td colspan="6" class="lib-empty">Sin resultados. <button class="btn soft sm" onclick="openExercise();document.getElementById('x_n').value=S.ui.lq||''">${ic('plus',13)} Crear «${esc(S.ui.lq||'')}»</button></td></tr>`}
-  </tbody></table>
-  <div class="lib-more"><span>${shown.length} de ${L.length} resultado${L.length===1?'':'s'}</span><span style="display:flex;gap:6px">${L.length>lim?`<button class="btn soft sm" onclick="S.ui.llim=${lim+25};renderLibTable()">Mostrar 25 más</button>`:''}<button class="btn ghost sm" onclick="S.ui.lq='';S.ui.lg='';S.ui.lt='';S.ui.lv='';renderApp()">Limpiar búsqueda</button></span></div>`;
+   <td><div class="row-acts"><button class="mini-btn" title="Editar" onclick="openExercise('${x.id}')">${ic('edit',14)}</button></div></td></tr>`}
+function libTableHTML(){
+  const q=normTxt((S.ui.lq||'').trim()),active=q.length>=2||S.ui.lg||S.ui.lt,uses=usageMap();
+  const L=S.library.filter(x=>(q.length<2||(q.includes(' ')?q.split(/\s+/).filter(w=>w.length>2).every(w=>[w,...(SYN[w]||[])].some(term=>normTxt(x.name).includes(term))):qTerms(q).some(term=>normTxt(x.name).includes(term)))||normTxt(x.group).includes(q)||(q.length>=5&&normTxt(x.type).startsWith(q)))&&(!S.ui.lg||x.group===S.ui.lg)&&(!S.ui.lt||x.type===S.ui.lt));
+  const groups=[...GROUPS,...[...new Set(L.map(x=>x.group))].filter(g=>!GROUPS.includes(g))].map(g=>[g,L.filter(x=>x.group===g).sort((a,b)=>a.name.localeCompare(b.name,'es'))]).filter(([,xs])=>xs.length);
+  if(!groups.length)return `<div class="lib-empty">Sin resultados. <button class="btn soft sm" onclick="openExercise();document.getElementById('x_n').value=S.ui.lq||''">${ic('plus',13)} Crear «${esc(S.ui.lq||'')}»</button></div>`;
+  return `<div class="lib-groups">${groups.map(([g,xs])=>`<details class="lgrp" ${active||(S.ui.lopen||[]).includes(g)?'open':''} ontoggle="libToggle('${g}',this.open)"><summary><span class="lg-n">${esc(g)}</span><span class="lg-c">${xs.length}</span><span class="lg-v">${xs.filter(x=>x.video).length?`${ic('play',10,true)} ${xs.filter(x=>x.video).length} con video`:''}</span><span class="chev">${ic('chev',16)}</span></summary>
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>Ejercicio</th><th>Tipo de entrenamiento</th><th>Video</th><th>En plantillas</th><th></th></tr></thead><tbody>${xs.map(x=>libRowHTML(x,uses)).join('')}</tbody></table></div></details>`).join('')}</div>
+  <div class="lib-more"><span>${L.length} ejercicio${L.length===1?'':'s'} en ${groups.length} grupo${groups.length===1?'':'s'}</span>${active?`<button class="btn ghost sm" onclick="S.ui.lq='';S.ui.lg='';S.ui.lt='';renderApp()">Limpiar búsqueda</button>`:''}</div>`;
 }
+function libToggle(g,open){S.ui.lopen=(S.ui.lopen||[]).filter(x=>x!==g);if(open)S.ui.lopen.push(g)}
 function renderLibTable(){const el=document.getElementById('libTable');if(el)el.innerHTML=libTableHTML()}
 function openExercise(id){
-  const x=id?S.library.find(e=>e.id===id):{name:'',group:'Pecho',type:'Hipertrofia',video:'',notes:''};
+  const x=id?S.library.find(e=>e.id===id):{name:'',group:'Pecho',type:'Fuerza',video:'',notes:''};
   openModal(`<div class="modal"><div class="modal-h"><h3>${ic('book',18)} ${id?'Editar ejercicio':'Nuevo ejercicio'}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
   <div class="modal-b"><div class="row" style="flex-wrap:wrap"><div style="min-width:240px">
     <div class="field"><label>Ejercicio</label><input id="x_n" value="${esc(x.name)}" placeholder="Ej. Hip thrust con barra"></div>
     <div class="row"><div class="field"><label>Grupo muscular</label><select id="x_g">${GROUPS.map(g=>`<option ${g===x.group?'selected':''}>${g}</option>`).join('')}</select></div>
-    <div class="field"><label>Tipo de entrenamiento</label><select id="x_t">${TTYPES.map(g=>`<option ${g===x.type?'selected':''}>${g}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Tipo de entrenamiento</label><select id="x_t">${TTYPES.map(g=>`<option ${g===normType(x.type)?'selected':''}>${g}</option>`).join('')}</select></div></div>
     <div class="field"><label>Link de video</label><div class="inrow"><span class="pre">${ic('video',18)}</span><input id="x_v" value="${esc(x.video)}" placeholder="Pega aquí el link del video" oninput="videoPreview('x_v','x_prev')"></div><small>Solo se guarda el link.</small></div>
     <div class="field"><label>Notas técnicas</label><textarea id="x_notes" placeholder="Claves de ejecución, errores comunes…">${esc(x.notes||'')}</textarea></div>
   </div><div style="min-width:240px"><div class="field"><label>Vista previa</label><div id="x_prev" class="ytprev empty">Pega un link para ver la vista previa</div></div>
@@ -2622,7 +2637,7 @@ function saveEditTask(){
   const sims=d.applyNext!==false?similarTasks(t):[],oldTitle=t.title;
   [t,...sims].forEach(x=>{const old=x.data.blocks;x.data={...x.data,blocks:JSON.parse(JSON.stringify(blocks))};if(x===t)x.data.attach=d.attach.filter(a=>a.value||a.type==='formulario');x.title=d.title.trim();x.edited=Date.now();remapProgress(x,old)});
   const nd=S.ui.addDate||t.date;if(nd!==t.date)t.date=nd;
-  blocks.forEach(b=>b.exercises.forEach(e=>{const nm=String(e.name).trim(),x=libFind(nm);if(!x)S.library.push({id:uid(),name:nm,group:guessGroup(t.title),type:'Hipertrofia',video:e.video||'',notes:'',src:['Coach']});else if(e.video&&!x.video)x.video=e.video}));
+  blocks.forEach(b=>b.exercises.forEach(e=>libAdd(e.name,t.title,e.video,!!e.cardio)));
   pushNotif(t.athleteId,`Tu coach actualizó «${oldTitle}»${sims.length?` y ${sims.length} sesiones más`:''}`);
   S.ui.draft=null;closeModal();S.ui.selDay=t.date;commit();toast(sims.length?`Cambios guardados en ${sims.length+1} sesiones`:'Cambios guardados');
 }
@@ -2799,7 +2814,7 @@ function applyLoadFile(){
     const oldTpl=a.plan&&a.plan.tplId;
     const tpl={...JSON.parse(JSON.stringify(L.plan)),id:uid(),src:'',athleteId:a.id,phase:0,desc:L.plan.desc||'Cargado desde Excel'};
     S.plans.push(tpl);a.plan={...JSON.parse(JSON.stringify(tpl)),tplId:tpl.id};
-    library_add:{tpl.days.forEach(d=>d.rows.forEach(r=>{const x=libFind(r.name);if(!x)S.library.push({id:uid(),name:r.name.trim(),group:guessGroup(d.name),type:'Hipertrofia',video:r.video||'',notes:'',src:['Coach']});else if(r.video&&!x.video)x.video=r.video}))}
+    tpl.days.forEach(d=>d.rows.forEach(r=>libAdd(r.name,d.name,r.video,r.cat===AERO)));
     if(L.doSched){
       if(oldTpl)S.tasks=S.tasks.filter(t=>!(t.planId===oldTpl&&t.status!=='done'&&!t.hist&&t.date>=L.start));
       const map=planWeekMap(tpl),dates=planSchedule(tpl,{start:L.start,wpp:tpl.wpp||2,map});
@@ -2864,7 +2879,7 @@ function planAddDay(){collectPlan();S.ui.pd.days.push({name:'Nuevo día',rows:[e
 function planDelDay(){collectPlan();if(S.ui.pd.days.length<2){toast('El plan necesita al menos un día');return}S.ui.pd.days.splice(S.ui.pday,1);S.ui.pday=0;renderPlanEditor()}
 function planAddRow(){collectPlan();const rows=S.ui.pd.days[S.ui.pday].rows,r=emptyRow();if(rows.length)r.cat=rows[rows.length-1].cat;rows.push(r);exRerender('p')}
 function planDelRow(i){collectPlan();exRemove(S.ui.pd.days[S.ui.pday].rows,i);exRerender('p')}
-function planAddFromLib(id){collectPlan();const e=S.library.find(x=>x.id===id);const r=emptyRow();r.name=e.name;r.video=e.video||'';r.cat=e.type==='Activación'?CATS[0]:(e.type==='Accesorio'||e.type==='Core')?CATS[2]:CATS[1];const rows=S.ui.pd.days[S.ui.pday].rows;if(rows.length===1&&!rows[0].name)rows[0]=r;else rows.push(r);renderPlanEditor()}
+function planAddFromLib(id){collectPlan();const e=S.library.find(x=>x.id===id);const r=emptyRow();r.name=e.name;r.video=e.video||'';r.cat=e.type==='Aeróbico'?AERO:CATS[1];if(r.cat===AERO){r.ph=[0,1,2,3].map(()=>['20','Z2']);r.machine=MACHINES.find(m=>normTxt(e.name).includes(normTxt(m)))||'Caminadora'}const rows=S.ui.pd.days[S.ui.pday].rows;if(rows.length===1&&!rows[0].name)rows[0]=r;else rows.push(r);renderPlanEditor()}
 function planCopyPhase(){collectPlan();S.ui.pd.days[S.ui.pday].rows.forEach(r=>{if(r.ph[0])r.ph=[0,1,2,3].map(()=>[...r.ph[0]])});renderPlanEditor();toast('Fase 1 copiada a las 4 fases')}
 function guessGroup(day){const k=day.toLowerCase();return /chest|pecho/.test(k)?'Pecho':/back|espalda/.test(k)?'Espalda':/shoulder|hombro/.test(k)?'Hombro':/quad|cuad/.test(k)?'Cuádriceps':/ham|glut/.test(k)?'Glúteo':/arm|brazo/.test(k)?'Bíceps':'Full body'}
 function savePlan(assign){
@@ -2874,7 +2889,7 @@ function savePlan(assign){
   if(!days.length){toast('Agrega al menos un ejercicio');return}
   if(days.some(d=>d.rows.some(r=>r.video&&!vInfo(r.video)))){toast('Hay un link de video que no es válido');return}
   p.days=days;
-  let added=0;p.days.forEach(d=>d.rows.forEach(r=>{const ex=libFind(r.name);if(!ex){S.library.push({id:uid(),name:r.name.trim(),group:guessGroup(d.name),type:'Hipertrofia',video:r.video||'',notes:'',src:['Coach']});added++}else if(r.video&&!ex.video)ex.video=r.video}));
+  let added=0;p.days.forEach(d=>d.rows.forEach(r=>{if(libAdd(r.name,d.name,r.video,r.cat===AERO))added++}));
   const orig=p.id?S.plans.find(x=>x.id===p.id):null,apply=p.id&&S.ui.pdApply!==false;
   if(p.id){S.plans[S.plans.findIndex(x=>x.id===p.id)]=p}else{p.id=uid();S.plans.push(p)}
   const upd=apply?refreshPlanTasks(p,orig):0;
