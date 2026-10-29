@@ -669,6 +669,20 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .xl-bar a{text-decoration:none}
 .demo-bar{flex-shrink:0;min-height:34px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:#fef3c7;color:#92400e;font-size:12.5px;padding:7px 14px;border-bottom:1px solid #fde68a;text-align:center}
 .demo-bar button{border:1px solid #f59e0b;background:#fff;color:#92400e;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.per{border-radius:18px;padding:14px;margin-bottom:12px;background:linear-gradient(135deg,#fff1f5 0%,#ffe4ec 100%);border:1.5px solid #fbcfe8;box-shadow:0 2px 10px rgba(236,72,153,.08)}
+.per-h{display:flex;align-items:center;gap:10px;color:#831843}
+.per-h b{font-size:14px}
+.per-s{font-size:12px;color:#9d174d;margin-top:2px}
+.per-ico{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:#fff;color:#ec4899;box-shadow:0 2px 8px rgba(236,72,153,.2);flex-shrink:0;animation:dropbob 2.6s ease-in-out infinite}
+@keyframes dropbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.per-days{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pday{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #f9a8d4;background:#fff;color:#be185d;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .15s,background .15s,box-shadow .15s}
+.pday .cdrop{color:#f472b6}
+.pday:hover{background:#fdf2f8;transform:translateY(-1px)}
+.pday.on{background:linear-gradient(135deg,#f472b6,#ec4899);border-color:#ec4899;color:#fff;box-shadow:0 4px 12px rgba(236,72,153,.35)}
+.pday.on .cdrop{color:#fff}
+.pday.end{border-style:dashed;color:#9d174d}
+@media (prefers-reduced-motion:reduce){.per-ico{animation:none}}
 </style>
 </head>
 <body>
@@ -1454,21 +1468,34 @@ function genderOf(a){if(!a)return '';const p=S.evo.filter(e=>e.kind==='prof'&&e.
 /* Ciclo menstrual (solo mujeres): último registro tipo 'cycle' en pt_evo; lo pueden editar atleta y coach */
 const cycleOf=aid=>S.evo.filter(e=>e.kind==='cycle'&&e.athleteId===aid).sort((x,y)=>y.ts-x.ts)[0]||null;
 function cyclePhase(c,ds){
-  if(!c||!c.tracking||!c.last)return null;const L=+c.len||28,P=+c.plen||5,diff=Math.round((parse(ds||TODAY)-parse(c.last))/864e5);if(diff<0)return null;
+  if(!c||!c.tracking||!c.last)return null;const L=+c.len||28,diff=Math.round((parse(ds||TODAY)-parse(c.last))/864e5);if(diff<0)return null;const P=(c.endFor===c.last&&c.endDay!=null&&diff<L)?+c.endDay:(+c.plen||5);
   const day=diff%L+1,ov=L-14,ph=day<=P?'Menstrual':day<ov-1?'Folicular':day<=ov+1?'Ovulatoria':'Lútea',next=addDays(c.last,(Math.floor(diff/L)+1)*L);
   return {day,len:L,phase:ph,next,menstrual:ph==='Menstrual'};
 }
 const PH_TIP={Menstrual:'Días de sangrado. Es normal tener menos energía; se puede bajar un poco la intensidad si hace falta.',Folicular:'La energía suele subir. Buen momento para entrenamientos más pesados.',Ovulatoria:'Fuerza y energía altas. Cuida la técnica: hay un poco más de laxitud en articulaciones.',Lútea:'Puede haber más cansancio, hinchazón o antojos. La sensación de esfuerzo suele ser mayor.'};
+const dropSVG=(s=18,cls='')=>`<svg class="cdrop ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-.35 0-.66.18-.85.47C9.5 5.6 5 11.4 5 15.2A7 7 0 0 0 19 15.2c0-3.8-4.5-9.6-6.15-12.13A1 1 0 0 0 12 2.6z" fill="currentColor"/><ellipse cx="9.2" cy="14.6" rx="1.35" ry="2.5" fill="#fff" opacity=".75" transform="rotate(-18 9.2 14.6)"/><circle cx="10.4" cy="10.9" r=".8" fill="#fff" opacity=".6"/></svg>`;
+function periodDayHTML(a,role){
+  const c=cycleOf(a.id),p=cyclePhase(c),cur=p&&p.menstrual?p.day:0,me=role==='athlete';
+  return `<div class="per"><div class="per-h"><span class="per-ico">${dropSVG(22)}</span><div style="flex:1;min-width:160px"><b>${me?'¿En qué día de tu periodo estás?':'¿En qué día de su periodo está?'}</b>${qm('periodo_dia')}<div class="per-s">${cur?`Hoy: <b>día ${cur}</b> de ${me?'tu':'su'} periodo`:me?'Toca el día en el que vas. Si no estás en tu periodo, déjalo así.':'Sin periodo registrado hoy.'}</div></div></div>
+    <div class="per-days">${[1,2,3,4,5].map(n=>`<button type="button" class="pday ${cur===n?'on':''}" aria-pressed="${cur===n}" onclick="cycDay('${a.id}','${role}',${n})">${dropSVG(15)}<span>Día ${n}</span></button>`).join('')}${cur?`<button type="button" class="pday end" onclick="cycDay('${a.id}','${role}',0)">Ya terminó</button>`:''}</div></div>`;
+}
+function cycDay(aid,role,n){
+  S.ui.cycA=aid;const c=cycleOf(aid),p=cyclePhase(c),a=S.athletes.find(x=>x.id===aid),first=(a.name||'').split(' ')[0];
+  if(n>0){const prev=c||{};cycWrite(aid,{tracking:true,last:addDays(TODAY,-(n-1)),plen:Math.max(+prev.plen||5,n),endDay:null,endFor:null});
+    if(role==='athlete')pushActivity(aid,'ready',`registró que va en el día ${n} de su periodo`);toast(role==='athlete'?`Listo: día ${n} de tu periodo 💧`:`${first}: día ${n} de su periodo`)}
+  else{if(!p||!p.menstrual)return;cycWrite(aid,{endDay:p.day-1,endFor:c.last});if(role==='athlete')pushActivity(aid,'ready','registró que terminó su periodo');toast('Listo, periodo terminado')}
+  cycRerender(role);
+}
 function cycleHTML(a,role){
   if(genderOf(a)!=='Mujer')return '';const c=cycleOf(a.id),on=!!(c&&c.tracking),p=cyclePhase(c),pre=role==='coach'?'nc':'ac';
-  return `<div class="cyc ${on?'on':''}"><div class="ch"><span class="ico">${ic('drop',17,on)}</span><div style="flex:1;min-width:150px"><b>Fase menstrual</b>${qm('ciclo')}<div class="muted" style="font-size:12px">${on?(p?`Día ${p.day} de ${p.len} · <b>${p.phase}</b> · próxima menstruación aprox. ${dmy(p.next).slice(0,5)}`:'Registrado · agrega la fecha de inicio de la última menstruación'):'Incluir este dato ayuda a ajustar la intensidad del entrenamiento'}</div></div>
+  return `${periodDayHTML(a,role)}<div class="cyc ${on?'on':''}"><div class="ch"><span class="ico">${ic('drop',17,on)}</span><div style="flex:1;min-width:150px"><b>Fase menstrual</b>${qm('ciclo')}<div class="muted" style="font-size:12px">${on?(p?`Día ${p.day} de ${p.len} · <b>${p.phase}</b> · próxima menstruación aprox. ${dmy(p.next).slice(0,5)}`:'Registrado · agrega la fecha de inicio de la última menstruación'):'Incluir este dato ayuda a ajustar la intensidad del entrenamiento'}</div></div>
     <button type="button" class="btn ${on?'ghost':'soft'} sm" onclick="cycToggle('${a.id}','${role}')">${on?'Quitar dato':'Incluir fase menstrual'}</button></div>
     ${on?`<div class="row" style="flex-wrap:wrap;margin-top:10px;align-items:end"><div class="field" style="min-width:150px;margin:0"><label>Inicio de la última menstruación</label><input type="date" id="${pre}_last" max="${TODAY}" value="${esc(c.last||'')}"></div><div class="field" style="min-width:110px;margin:0"><label>Duración del ciclo (días)</label><input type="number" id="${pre}_len" min="20" max="45" value="${esc(c.len||28)}"></div><div class="field" style="min-width:110px;margin:0"><label>Días de sangrado</label><input type="number" id="${pre}_plen" min="2" max="10" value="${esc(c.plen||5)}"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn soft sm" onclick="cycSave('${a.id}','${role}',true)">${ic('drop',12,true)} Hoy empezó</button><button type="button" class="btn primary sm" onclick="cycSave('${a.id}','${role}')">Guardar</button></div></div>
       ${p?`<div class="ph"><span class="phase-pill">${ic('drop',11,true)} Fase ${p.phase}</span> ${PH_TIP[p.phase]}</div>`:''}`:''}
   </div>`;
 }
-function cycWrite(aid,data){const prev=cycleOf(aid)||{};S.evo.push({id:uid(),athleteId:aid,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:prev.last||'',len:prev.len||28,plen:prev.plen||5,...data})}
+function cycWrite(aid,data){const prev=cycleOf(aid)||{};S.evo.push({id:uid(),athleteId:aid,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:prev.last||'',len:prev.len||28,plen:prev.plen||5,...(prev.endFor&&prev.endFor===(data.last||prev.last)?{endDay:prev.endDay,endFor:prev.endFor}:{}),...data})}
 function cycRerender(role){const el=document.getElementById('na_cyc');if(role==='coach'&&el){el.innerHTML=cycleHTML(S.athletes.find(x=>x.id===S.ui.cycA),'coach');save();renderApp()}else commit()}
 function cycToggle(aid,role){S.ui.cycA=aid;const c=cycleOf(aid);cycWrite(aid,{tracking:!(c&&c.tracking)});if(role==='athlete')pushActivity(aid,'ready',c&&c.tracking?'quitó el dato de fase menstrual':'empezó a registrar su fase menstrual');cycRerender(role)}
 function cycSave(aid,role,today){S.ui.cycA=aid;const pre=role==='coach'?'nc':'ac';const last=today?TODAY:gv(pre+'_last'),len=+gv(pre+'_len')||28,plen=+gv(pre+'_plen')||5;
@@ -2619,6 +2646,7 @@ const HELP={
   racha:{t:'Tu racha',b:'Cuántos días de entrenamiento seguidos has cumplido con todo lo que te tocaba.'},
   actividad:{t:'Otra actividad',b:'Si hiciste algo fuera de tu plan (correr, bici, un partido), regístralo para que también cuente en tu carga de la semana.'},
   peso:{t:'Peso corporal',b:'Pésate en ayunas, a la misma hora y en la misma báscula para que tus datos se puedan comparar.'},
+  periodo_dia:{t:'Día de tu periodo',b:'Toca el día de tu periodo en el que vas (día 1 = el primer día de sangrado). Con eso calculamos tu fase y tu coach puede ajustar la intensidad, por ejemplo bajar un poco el peso los primeros días si lo necesitas. Cuando termine, toca «Ya terminó». Solo lo ven tú y tu coach.'},
   ciclo:{t:'Fase menstrual',b:'Es opcional. Si lo incluyes, con la fecha en que empezó tu última menstruación y cuántos días dura tu ciclo calculamos en qué fase estás. Tu energía y fuerza cambian según la fase, y tu coach lo usa para ajustar la intensidad. Solo lo ven tú y tu coach.'},
   comp:{t:'Tu composición',b:'Tu peso, cuánto de tu cuerpo es grasa y cuánta energía gastas al día. IMC compara tu peso con tu estatura. IMM muestra cuánto músculo tienes para tu estatura. GEB es lo que tu cuerpo gasta en reposo y GET es todo lo que gastas en un día normal, contando tu actividad.'},
   imm:{t:'IMM · índice de masa muscular',b:'Muestra cuánto músculo tienes en relación con tu estatura (kilos de músculo ÷ estatura²). Si no hay medición de masa muscular, se usa la masa libre de grasa. Subirlo con el tiempo significa que ganas músculo.'},
