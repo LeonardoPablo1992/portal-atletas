@@ -1636,7 +1636,8 @@ async function runDeleteAccount(){
   }catch(e){
     console.error(e);DEL.busy=false;DEL.step=0;const m=String(e.message||e);
     renderApp();
-    toast(/delete_my_account|function|schema cache/i.test(m)?'Esta opción aún no está activada. Pídele a tu coach que la active.':/coach/.test(m)?'La cuenta del coach no se puede eliminar desde aquí.':'No se pudo eliminar tu perfil. Intenta de nuevo.');
+    if(/delete_my_account|function|schema cache/i.test(m))delSetupModal('athlete');
+    else toast(/coach/.test(m)?'La cuenta del coach no se puede eliminar desde aquí.':'No se pudo eliminar tu perfil. Intenta de nuevo.');
   }
 }
 
@@ -1679,11 +1680,19 @@ async function runDeleteClient(){
     CDEL.st={files:'ok',data:'ok',acct:'ok'};cdelPaint();await wait(600);
     CDEL.busy=false;DEL.busy=false;save();renderApp();CDEL.step=4;renderDelClient();
   }catch(e){
-    console.error(e);CDEL.busy=false;DEL.busy=false;CDEL.step=1;const m=String(e.message||e);closeModal();
-    toast(/coach_delete_client|function|schema cache/i.test(m)?'Falta activar la función en Supabase: corre eliminar-cuenta.sql':/not_coach/.test(m)?'Solo el coach puede eliminar clientes':'No se pudo eliminar al cliente. Intenta de nuevo.');
+    console.error(e);CDEL.busy=false;DEL.busy=false;CDEL.step=1;const m=String(e.message||e);
+    if(/coach_delete_client|function|schema cache/i.test(m))delSetupModal('coach');
+    else{closeModal();toast(/not_coach/.test(m)?'Solo el coach puede eliminar clientes':'No se pudo eliminar al cliente. Intenta de nuevo.')}
   }
 }
 
+function delSetupModal(role){
+  const co=role==='coach';
+  openModal(`<div class="modal sm del-modal"><div class="modal-h"><h3>⚙️ Falta activar esta opción</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
+    <div class="del-box" style="margin:0"><div class="del-h"><span class="del-e">🛑</span><div><b class="tt">No se borró nada</b><div>${co?'La función para eliminar clientes todavía no está instalada en tu Supabase. Todo sigue igual.':'Esta opción todavía no está activa. Tu cuenta sigue igual; avísale a tu coach para que la active.'}</div></div></div>
+    ${co?`<div class="del-steps"><div class="ds ok"><span>1️⃣</span>Abre Supabase → <b>SQL Editor</b> → <b>New query</b></div><div class="ds ok"><span>2️⃣</span>Pega el script <b>eliminar-cuenta.sql</b> y toca <b>Run</b></div><div class="ds ok"><span>3️⃣</span>Vuelve aquí y elimina otra vez ✅</div></div>
+    <div class="del-f"><a class="btn ghost sm" href="/v2/eliminar-cuenta.sql" target="_blank" rel="noopener">📄 Ver el script</a><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`:`<div class="del-f"><button class="btn del-btn sm" onclick="closeModal()">Entendido</button></div>`}</div></div></div>`);
+}
 function delDoneScreen(){
   document.getElementById('whoAmI').textContent='';const lo=document.getElementById('btnLogout');if(lo)lo.style.display='none';
   const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="/anterior/#crear-cuenta">✨ Crear un perfil nuevo</a>`;
