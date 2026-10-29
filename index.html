@@ -734,6 +734,20 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .lf-chips span{background:var(--bg);border:1px solid var(--line-2);border-radius:999px;padding:4px 10px;font-size:12px}
 .lf-meals{display:flex;flex-direction:column;gap:4px}
 .lf-warn{margin-top:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:7px 10px;font-size:12px}
+.exc.aero{border-color:#bae6fd;background:linear-gradient(135deg,#fff,#f0f9ff)}
+.aero-tag{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12.5px;font-weight:800;color:#0369a1}
+.exc.aero .phc{background:#f0f9ff;border-color:#e0f2fe}
+.exc.aero .stp button{background:#e0f2fe;color:#0369a1}
+.exc.aero .stp button:active{background:#0284c7;color:#fff}
+.exc .mq{border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:600;background:#fff;min-width:150px}
+.incl{display:inline-flex;align-items:center;gap:4px}
+.na-pill{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:700;border:1px dashed var(--line)}
+.fce{font-size:11px;font-weight:700;color:#0369a1}
+.fce-big{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#e0f2fe;font-size:13px}
+.blk-h.aero{background:#0ea5e9}
+.aero-ic{font-size:16px}
+.btn.aero-add{background:#e0f2fe;color:#0369a1;border-color:#bae6fd}
+details.aero-v summary .n{background:#e0f2fe}
 </style>
 </head>
 <body>
@@ -838,7 +852,8 @@ const TEMPLATES={
 };
 const GROUPS=['Pecho','Espalda','Hombro','Bíceps','Tríceps','Cuádriceps','Glúteo','Isquiotibiales','Aductores','Pantorrilla','Core','Full body','Cardio','Movilidad'];
 const TTYPES=['Hipertrofia','Fuerza','Potencia','Activación','Accesorio','Core','Cardio','Movilidad'];
-const CATS=['Activación / rezagado','Principal','Complementario'];
+const CATS=['Activación / rezagado','Principal','Complementario','Aeróbico / cardio'];
+const AERO=CATS[3];
 const DEFAULT_DAYS=['Hams & Glutes','Shoulder & Tricep','Quads','Back & Bicep','Chest'];
 const RPE_LBL=['Reposo','Muy, muy fácil','Fácil','Moderado','Algo duro','Duro','Duro +','Muy duro','Muy duro +','Muy, muy duro','Máximo'];
 const ZONES=[['Z1','50–60%'],['Z2','60–70%'],['Z3','70–80%'],['Z4','80–90%'],['Z5','90–100%']];
@@ -853,7 +868,7 @@ const FORMS={
   parq:{name:'Cuestionario PAR-Q',qs:[{q:'¿Algún médico te ha restringido la actividad física?',t:'yn'},{q:'¿Sientes dolor en el pecho al hacer ejercicio?',t:'yn'},{q:'¿Tomas algún medicamento actualmente?',t:'yn'}]},
   feedback:{name:'Feedback de entrenamiento',qs:[{q:'¿Qué tan intenso fue el entrenamiento?',t:'scale'},{q:'¿Qué ejercicio te gustó más?',t:'text'}]}
 };
-const BLOCK_NAMES=['Calentamiento','Bloque de tensión mecánica','Bloque de hipertrofia','Superserie','Circuito','Core','Cardio','Vuelta a la calma'];
+const BLOCK_NAMES=['Calentamiento','Bloque de tensión mecánica','Bloque de hipertrofia','Superserie','Circuito','Core','Aeróbico / cardio','Vuelta a la calma'];
 
 /* =========================================================
    UTILIDADES
@@ -1273,8 +1288,8 @@ function planViewHTML(p,mode){
   const cnt={L:0,k:0};
   CATS.forEach(c=>{const rows=d.rows.filter(r=>(CATS.includes(r.cat)?r.cat:CATS[1])===c);if(!rows.length)return;
     h+=`<div class="pcat">${c}</div>`;
-    exGroups(rows,cnt).forEach(g=>{let gh='';for(let i=g.s;i<=g.e;i++){const r=rows[i],q=r.ph[ph],vurl=r.video||(libFind(r.name)||{}).video||'',vid=vInfo(vurl),nx=g.n>1&&i<g.e?g.lab[i-g.s+1]:'';
-      gh+=`<div class="prow"><span class="n" ${g.n>1?'style="background:var(--green);color:#fff;width:auto;min-width:24px;padding:0 4px"':''}>${g.lab[i-g.s]}</span><div class="pn ${q?'':'skip'}"><b>${esc(r.name)}</b> ${r.drop?'<span class="kpill drop">Dropset</span>':''}<div class="pm">${q?`<b>${esc(q[0])}</b> × <b>${esc(q[1]||'—')}</b>`:'No va en esta fase'}${r.tempo?` · tempo ${esc(r.tempo)}`:''}${r.rir!==''&&r.rir!=null?` · RIR ${esc(r.rir)}`:''}${nx?` · sin descanso → ${nx}`:r.rest?` · desc. ${esc(r.rest)}`:''}${r.unit==='lb'?' · peso en lb':''}</div></div>${vid?`<button class="vprev" title="Ver video" onclick="playVideo('${jsq(vurl)}','${jsq(r.name)}')">${ic('play',12,true)}</button>`:''}</div>`}
+    exGroups(rows,cnt).forEach(g=>{let gh='';for(let i=g.s;i<=g.e;i++){const r=rows[i],q=r.ph[ph],vurl=r.video||(libFind(r.name)||{}).video||'',vid=vInfo(vurl),nx=g.n>1&&i<g.e?g.lab[i-g.s+1]:'',ath=mode==='athlete'?curA():S.athletes.find(x=>x.id===(p.athleteId||S.ui.pvA));
+      gh+=`<div class="prow"><span class="n" ${g.n>1?'style="background:var(--green);color:#fff;width:auto;min-width:24px;padding:0 4px"':''}>${g.lab[i-g.s]}</span><div class="pn ${q?'':'skip'}"><b>${esc(r.name)}</b> ${r.drop?'<span class="kpill drop">Dropset</span>':''}<div class="pm">${r.cat===AERO?(q?aeroLine(r.machine,q[0],q[1],r.incline,ath):'No va en esta fase'):`${q?`<b>${esc(q[0])}</b> × <b>${esc(q[1]||'—')}</b>`:'No va en esta fase'}${r.tempo?` · tempo ${esc(r.tempo)}`:''}${r.rir!==''&&r.rir!=null?` · RIR ${esc(r.rir)}`:''}${nx?` · sin descanso → ${nx}`:r.rest?` · desc. ${esc(r.rest)}`:''}${r.unit==='lb'?' · peso en lb':''}`}</div></div>${vid?`<button class="vprev" title="Ver video" onclick="playVideo('${jsq(vurl)}','${jsq(r.name)}')">${ic('play',12,true)}</button>`:''}</div>`}
       h+=g.n>1?`<div class="sgrp"><div class="sgrp-h"><span class="gbadge">${g.L}</span>${g.kind} ${qm(g.kind.toLowerCase())}<small>${grpHint(g,rows)}</small></div>${gh}</div>`:gh})});
   if(mode==='athlete')h+=`<button class="btn primary full" style="margin-top:14px" onclick="startPlanDay(${di})">${ic('play',14,true)} Entrenar «${esc(d.name)}» hoy</button>`;
   return h;
@@ -1812,11 +1827,11 @@ function builderInner(){
   <datalist id="dl_ex">${S.library.map(e=>`<option value="${esc(e.name)}">`).join('')}</datalist>
   <datalist id="dl_blk">${BLOCK_NAMES.map(e=>`<option value="${esc(e)}">`).join('')}</datalist>
   ${d.blocks.map((b,bi)=>`<div class="blk">
-    <div class="blk-h"><input data-bn="${bi}" list="dl_blk" value="${esc(b.name)}" placeholder="Nombre del bloque"><button onclick="delBlock(${bi})">Quitar</button></div>
+    <div class="blk-h ${isAeroBlock(b.name)?'aero':''}">${(b.exercises.forEach(e=>{if(isAeroBlock(b.name)){if(!e.cardio){e.cardio=true;e.machine=e.machine||'Caminadora';e.time=e.time||'20';e.zone=e.zone||'Z2'}}else delete e.cardio}),'')}${isAeroBlock(b.name)?'<span class="aero-ic">🏃</span>':''}<input data-bn="${bi}" list="dl_blk" value="${esc(b.name)}" placeholder="Nombre del bloque" onchange="collectDraft();exRerender('t')"><button onclick="delBlock(${bi})">Quitar</button></div>
     <div class="blk-b">${exEditList('t',bi,b.exercises)}</div>
     <div class="blk-f"><button onclick="addEx(${bi})">+ Ejercicio</button></div>
   </div>`).join('')}
-  <button class="btn ghost sm" onclick="addBlock()">${ic('plus',14)} Agregar bloque</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="addBlock()">${ic('plus',14)} Agregar bloque</button><button class="btn soft sm aero-add" onclick="addAeroBlock()">🏃 Agregar bloque aeróbico</button></div>
   <div class="attach-bar">
     <div class="lbl">Agregar a esta sesión</div>
     <div class="ico-chips">${ATTACH_TYPES.map(k=>`<button class="ico-chip" style="--c:${TYPES[k].color}" onclick="addAttach('${k}')"><i></i>${ic(TYPES[k].icon,14)} ${TYPES[k].label}</button>`).join('')}</div>
@@ -1843,7 +1858,7 @@ function collectDraft(){
 }
 function addBlock(){collectDraft();S.ui.draft.blocks.push({name:'',exercises:[{name:'',sets:'',reps:'',rest:'',video:''}]});rerenderBuilder()}
 function delBlock(i){collectDraft();S.ui.draft.blocks.splice(i,1);rerenderBuilder()}
-function addEx(b){collectDraft();S.ui.draft.blocks[b].exercises.push(exMk('t'));exRerender('t')}
+function addEx(b){collectDraft();const B=S.ui.draft.blocks[b];B.exercises.push(isAeroBlock(B.name)?aeroMk():exMk('t'));exRerender('t')}
 function delEx(b,e){collectDraft();exRemove(S.ui.draft.blocks[b].exercises,e);if(!S.ui.draft.blocks[b].exercises.length)S.ui.draft.blocks.splice(b,1);rerenderBuilder()}
 function loadTpl(k){collectDraft();const att=S.ui.draft.attach;S.ui.draft=tplToDraft(k);S.ui.draft.attach=att;rerenderBuilder();toast('Plantilla cargada — edítala a tu gusto')}
 function addAttach(type){collectDraft();S.ui.draft.attach.push({type,title:type==='video'?'Video de apoyo':TYPES[type].label,value:type==='formulario'?'feedback':''});rerenderBuilder()}
@@ -1861,7 +1876,7 @@ function saveTask(type){
   if(type==='entrenamiento'&&S.ui.draft&&S.ui.draft.editId)return saveEditTask();
   if(type==='entrenamiento'){
     collectDraft();const d=S.ui.draft;
-    d.blocks=d.blocks.map(b=>({...b,exercises:b.exercises.filter(e=>e.name.trim())})).filter(b=>b.exercises.length);
+    d.blocks=normAero(d.blocks).map(b=>({...b,exercises:b.exercises.filter(e=>String(e.name||'').trim())})).filter(b=>b.exercises.length);
     if(!d.title.trim()){toast('Ponle nombre al entrenamiento');rerenderBuilder();return}
     if(!d.blocks.length){toast('Agrega al menos un ejercicio');S.ui.draft.blocks=[{name:'Calentamiento',exercises:[{name:'',sets:'',reps:'',rest:'',video:''}]}];rerenderBuilder();return}
     const bad=d.blocks.flatMap(b=>b.exercises).find(e=>e.video&&!ytId(e.video))||d.attach.find(x=>x.type==='video'&&x.value&&!ytId(x.value));
@@ -2396,8 +2411,13 @@ function exGrpAdd(mode,a,e){const list=exCollect(mode,a);list.splice(e+1,0,exMk(
 function exUngroup(mode,a,s){const list=exCollect(mode,a),g=exGroups(list).find(g=>g.s===s);if(g)for(let x=g.s;x<=g.e;x++){list[x].link=false;list[x].gtype=''}exRerender(mode)}
 function exUnit(mode,a,i,u){const list=exCollect(mode,a);list[i].unit=u;exRerender(mode)}
 function exMove(mode,a,i,d){const list=exCollect(mode,a),j=i+d;if(j<0||j>=list.length)return;const A=list[i],B=list[j],la=[A.link,A.gtype],lb=[B.link,B.gtype];
-  list[i]=B;list[j]=A;[list[i].link,list[i].gtype]=la;[list[j].link,list[j].gtype]=lb;if(mode==='p'&&A.cat!==B.cat){const c=A.cat;A.cat=B.cat;B.cat=c}exRerender(mode)}
-function exCat(i,v){const list=exCollect('p',S.ui.pday),g=exGroups(list).find(g=>i>=g.s&&i<=g.e);for(let x=g.s;x<=g.e;x++)list[x].cat=v;exRerender('p')}
+  list[i]=B;list[j]=A;[list[i].link,list[i].gtype]=la;[list[j].link,list[j].gtype]=lb;if(mode==='p'&&A.cat!==B.cat&&A.cat!==AERO&&B.cat!==AERO){const c=A.cat;A.cat=B.cat;B.cat=c}exRerender(mode)}
+function exCat(i,v){const list=exCollect('p',S.ui.pday),g=exGroups(list).find(g=>i>=g.s&&i<=g.e),r=list[i],wasA=r.cat===AERO;
+  if(v===AERO||wasA){if(g.n>1)setExType(list,i,'Aislado',()=>null);r.cat=v;
+    if(v===AERO&&!wasA){r.ph=[0,1,2,3].map(()=>['20','Z2']);r.machine=r.machine||'Caminadora';r.drop=false;r.link=false;r.tempo='';r.rir='';r.rest='';if(!String(r.name||'').trim())r.name='Cardio'}
+    if(v!==AERO&&wasA){r.ph=[0,1,2,3].map(()=>['4','12'])}}
+  else for(let x=g.s;x<=g.e;x++)list[x].cat=v;
+  exRerender('p')}
 
 /* ---- botones +/− ---- */
 const TEMPOS=['','2-0-1-0','2-0-2-0','3-0-1-0','3-1-1-0','4-0-1-0','2-1-1-1','3-0-1-1','4-1-1-0','X-0-X-0'];
@@ -2408,6 +2428,9 @@ function stepVal(k,v,d){
   if(k==='sets'){if(!v)return d>0?'3':'';const n=(parseInt(v)||0)+d;return n<1?'':String(Math.min(20,n))}
   if(k==='reps'){if(!v)return '10';return /\d/.test(v)?v.replace(/\d+/g,m=>String(Math.max(1,+m+d))):v}
   if(k==='rir'){if(!v)return '2';return /\d/.test(v)?v.replace(/\d+/g,m=>String(cl(+m+d,0,10))):v}
+  if(k==='min'){if(!v)return d>0?'20':'';const n=(parseInt(v)||0)+5*d;return n<1?'':String(Math.min(240,n))}
+  if(k==='zone'){if(!v)return 'Z2';return 'Z'+cl((zIdx(v)||2)+d,1,5)}
+  if(k==='incl'){const n=(parseFloat(v)||0)+d;return String(cl(Math.round(n*2)/2,0,20))}
   if(k==='rest'){const s=restSec(v);return fmtRest(s==null?60:cl(s+15*d,0,600))}
   if(k==='tempo'){const i=TEMPOS.indexOf(v);return TEMPOS[((i<0?0:i)+d+TEMPOS.length)%TEMPOS.length]}
   return v;
@@ -2417,8 +2440,41 @@ function stpGo(b,d){const w=b.parentNode,i=w.querySelector('input');i.value=step
 function unitTog(mode,a,i,u){u=u||'kg';return `<span class="unit" role="group" aria-label="Unidad de peso">${['kg','lb'].map(x=>`<button type="button" class="${u===x?'on':''}" onclick="exUnit('${mode}',${a},${i},'${x}')">${x}</button>`).join('')}</span>`}
 
 /* ---- tarjetas del editor (plan = 'p' con 4 fases · sesión = 't') ---- */
+
+/* ---- trabajo aeróbico: máquina, tiempo, inclinación (caminadora), zona Karvonen y FCE ---- */
+const MACHINES=['Caminadora','Bicicleta','Elíptica','Escaladora','Remo','Assault bike','Correr al aire libre','Otra'];
+const isAeroBlock=n=>/cardio|aer[oó]b/i.test(String(n||''));
+const zIdx=z=>{const m=String(z||'').match(/[1-5]/);return m?+m[0]:0};
+function fceTxt(a,z){const i=zIdx(z);if(!i)return '';const k=karvonen(a);return k?`${k.z[i-1].lo}–${k.z[i-1].hi} lpm`:`${ZONES[i-1][1]} de FC de reserva`}
+function fceAth(mode){return mode==='p'?(S.ui.pd&&S.ui.pd.athleteId?S.athletes.find(x=>x.id===S.ui.pd.athleteId):null):curA()}
+function fceUpd(inp,mode){const box=inp.closest('.phc')||inp.closest('.exc'),t=box&&box.querySelector('.fce');if(t)t.textContent=fceTxt(fceAth(mode),inp.value)||'—'}
+const aeroMk=()=>({name:'Cardio',cardio:true,machine:'Caminadora',time:'20',zone:'Z2',incline:'',sets:'1',reps:'',video:''});
+function aeroLine(machine,min,zone,incl,a){const zi=zIdx(zone),f=fceTxt(a,zone);return `🏃 <b>${esc(machine||'Cardio')}</b> · <b>${esc(min||'—')} min</b>${zi?` · Zona ${zi} (${ZNAME[zi-1]})`:''}${(machine||'Caminadora')==='Caminadora'&&incl!==''&&incl!=null?` · inclinación ${esc(incl)}%`:''}${f?` · FCE <b>${f}</b>`:''}`}
+function exMachine(mode,a,i,v){const list=exCollect(mode,a);list[i].machine=v;if(v!=='Caminadora')list[i].incline='';if(!String(list[i].name||'').trim()||MACHINES.includes(list[i].name)||list[i].name==='Cardio')list[i].name=v;exRerender(mode)}
+function addAeroBlock(){collectDraft();S.ui.draft.blocks.push({name:AERO,exercises:[aeroMk()]});exRerender('t')}
+function normAero(blocks){blocks.forEach(b=>{const on=isAeroBlock(b.name);b.exercises.forEach(e=>{if(on){e.cardio=true;e.sets='1';e.reps='';if(!String(e.name||'').trim())e.name=e.machine||'Cardio'}else delete e.cardio})});return blocks}
+function aeroCard(mode,a,i,e,lab,P,at,vid){
+  const ath=fceAth(mode),mq=e.machine||'Caminadora';
+  return `<div class="exc aero">
+   <div class="top"><span class="num">${lab}</span>
+    <input class="nm" ${at('name')} list="dl_ex" value="${esc(e.name||'')}" placeholder="Ej. Cardio LISS">
+    ${P?`<select class="cat" ${at('cat')} onchange="exCat(${i},this.value)" title="Categoría">${CATS.map(c=>`<option ${c===e.cat?'selected':''}>${c}</option>`).join('')}</select>`:''}
+    <span class="vwrap vw"><input class="yt-in" ${at('video')} value="${esc(e.video||'')}" placeholder="Link del video" oninput="rowPrev(this,'${vid}')"><button type="button" class="vprev" title="Vista previa" onclick="prevInput(this)">${ic('play',12,true)}</button></span>
+    <span class="mv"><button type="button" title="Subir" onclick="exMove('${mode}',${a},${i},-1)">↑</button><button type="button" title="Bajar" onclick="exMove('${mode}',${a},${i},1)">↓</button></span>
+    <button type="button" class="del" title="Quitar" onclick="${P?`planDelRow(${i})`:`delEx(${a},${i})`}">${ic('trash',15)}</button></div>
+   <div class="aero-tag">🏃 Trabajo aeróbico ${ath&&karvonen(ath)?'':`<span class="muted" style="font-weight:500">· ${P?'la FCE en lpm se calcula al asignarlo a un cliente con edad y FC en reposo':'agrega edad y FC en reposo del cliente para ver la FCE en lpm'}</span>`}</div>
+   ${P?`<div class="phs">${[0,1,2,3].map(f=>{const q=e.ph[f];return `<div class="phc ${q?'':'off'}"><b>Fase ${f+1}</b>${stp('min',`data-pp="${a}|${i}|${f}|0"`,q?q[0]:'','—')}<span class="by">minutos · zona</span>${stp('zone',`data-pp="${a}|${i}|${f}|1" onchange="fceUpd(this,'p')"`,q?q[1]:'','—')}<span class="fce">${fceTxt(ath,q?q[1]:'')||'—'}</span></div>`}).join('')}</div>`:''}
+   <div class="prm">
+    <div class="pf"><label>Máquina</label><select class="mq" ${at('machine')} onchange="exMachine('${mode}',${a},${i},this.value)">${MACHINES.map(m=>`<option ${m===mq?'selected':''}>${m}</option>`).join('')}</select></div>
+    ${P?'':`<div class="pf"><label>Tiempo (min)</label>${stp('min',at('time'),e.time,'20')}</div><div class="pf"><label>Zona Karvonen</label>${stp('zone',at('zone')+` onchange="fceUpd(this,'t')"`,e.zone,'Z2')}</div>`}
+    <div class="pf"><label>Inclinación</label>${mq==='Caminadora'?`<span class="incl">${stp('incl',at('incline'),e.incline,'0')}<b>%</b></span>`:'<span class="na-pill">No aplica</span>'}</div>
+    ${P?'':`<div class="pf"><label>FCE ${qm('fce')}</label><span class="fce fce-big">${fceTxt(ath,e.zone)||'—'}</span></div>`}
+   </div>
+   <div class="ex-vp" id="${vid}">${vInfo(e.video)?inlineVid(e.video,e.name):''}</div></div>`;
+}
 function exCard(mode,a,i,e,lab,g){
   const P=mode==='p',at=f=>P?`data-pf="${a}|${i}|${f}"`:`data-ef="${a}|${i}|${f}"`,vid=`vp_${mode}${a}_${i}`,inG=g.n>1;
+  if(P?e.cat===AERO:e.cardio)return aeroCard(mode,a,i,e,lab,P,at,vid);
   return `<div class="exc ${inG?'in':''}">
    <div class="top"><span class="num ${inG?'g':''}">${lab}</span>
     <input class="nm" ${at('name')} list="dl_ex" value="${esc(e.name||'')}" placeholder="Ejercicio" onchange="libFill(this)">
@@ -2449,6 +2505,11 @@ const wUnit=(t,key,e)=>(t.progress&&t.progress.u&&t.progress.u[key])||(e&&e.unit
 const toKg=(v,u)=>u==='lb'?v*0.45359237:v;
 function grpHint(g,list){const labs=g.lab,last=list[g.e]||{};return `Haz ${labs.slice(0,-1).join(', ')} y ${labs[labs.length-1]} seguidos, sin descanso entre ellos. Descansa ${last.rest?esc(last.rest):'lo indicado'} al terminar la vuelta.`}
 function exvHTML(t,bi,ei,e,lab,live,nx){
+  if(e.cardio){const key=`${bi}-${ei}`,[sc,sl]=exStatus(t,bi,ei,e),vurl=e.video||libFind(e.name)?.video||'',vid=vInfo(vurl),on=t.progress?.sets?.[`${key}-0`],ath=S.athletes.find(x=>x.id===t.athleteId);
+    return `<details class="exv aero-v" ${live&&sc!=='done'?'open':''}><summary><span class="n">🏃</span><span class="nm">${esc(e.name)}</span>${vid?`<span style="color:#e11d48;display:flex">${ic('video',16)}</span>`:''}<span class="pill ${sc}">${sl}</span><span class="chev">${ic('chev',16)}</span></summary>
+      <div class="exv-b"><span>${aeroLine(e.machine,e.time,e.zone,e.incline,ath)} ${qm('fce')}</span>
+      ${vid?`<div style="width:100%">${inlineVid(vurl,e.name)}</div><button class="vbtn" onclick="playVideo('${jsq(vurl)}','${jsq(e.name)}')">${ic('ext',12)} Pantalla completa</button>`:''}
+      <div class="setpills" style="width:100%"><button class="setp ${on?'on':''}" ${live?`onclick="toggleSet('${t.id}','${key}-0')"`:'disabled'}>${on?ic('check',12):''} ${on?'Hecho':'Marcar como hecho'}</button></div></div></details>`}
   const key=`${bi}-${ei}`,[sc,sl]=exStatus(t,bi,ei,e),n=Math.max(1,parseInt(e.sets)||1),vurl=e.video||libFind(e.name)?.video||'',vid=vInfo(vurl),kg=t.progress?.kg?.[key],u=wUnit(t,key,e);
   return `<details class="exv" ${live&&sc!=='done'?'open':''}><summary><span class="n">${lab}</span><span class="nm">${esc(e.name)}</span>${e.drop?'<span class="kpill drop">Dropset</span>':''}${vid?`<span style="color:#e11d48;display:flex">${ic('video',16)}</span>`:''}<span class="pill ${sc}">${sl}</span><span class="chev">${ic('chev',16)}</span></summary>
       <div class="exv-b"><span><b>${esc(e.sets||1)}</b> × <b>${esc(e.reps||'—')}</b>${e.tempo?` · tempo ${esc(e.tempo)}`:''}${e.rir!==''&&e.rir!=null?` · RIR ${esc(e.rir)}`:''}${nx?` · <b>sin descanso</b>, sigue con ${nx}`:e.rest?` · descanso ${esc(e.rest)}`:''}${!live&&kg?` · <b>${esc(kg)} ${u}</b>`:''}</span>
@@ -2493,7 +2554,7 @@ function editFooterHTML(d){
 }
 function saveEditTask(){
   collectDraft();const d=S.ui.draft,t=taskById(d.editId);if(!t){closeModal();return}
-  const blocks=d.blocks.map(b=>({...b,exercises:b.exercises.filter(e=>String(e.name||'').trim())})).filter(b=>b.exercises.length);
+  const blocks=normAero(d.blocks).map(b=>({...b,exercises:b.exercises.filter(e=>String(e.name||'').trim())})).filter(b=>b.exercises.length);
   if(!String(d.title||'').trim()){toast('Ponle nombre al entrenamiento');return}
   if(!blocks.length){toast('Agrega al menos un ejercicio');return}
   if(blocks.some(b=>b.exercises.some(e=>e.video&&!vInfo(e.video)))){toast('Hay un link de video que no es válido');return}
@@ -2525,8 +2586,8 @@ function refreshPlanTasks(p,orig){
 /* ---- Excel: plantilla, exportar y subir ---- */
 const XLSX_SRC='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement('script');s.src=XLSX_SRC;s.onload=ok;s.onerror=()=>ko(new Error('No se pudo cargar el lector de Excel. Revisa tu conexión.'));document.head.appendChild(s)})}
-const XL_HEAD=['Grupo','Combinación','Tipo','Ejercicio','F1 Series','F1 Reps','F2 Series','F2 Reps','F3 Series','F3 Reps','F4 Series','F4 Reps','Tempo','RIR','Descanso','Unidad','Video'];
-const catShort=c=>c===CATS[0]?'Rezagado':c===CATS[2]?'Complementario':'Principal';
+const XL_HEAD=['Grupo','Combinación','Tipo','Ejercicio','F1 Series','F1 Reps','F2 Series','F2 Reps','F3 Series','F3 Reps','F4 Series','F4 Reps','Tempo','RIR','Descanso','Unidad','Video','Máquina','Inclinación'];
+const catShort=c=>c===CATS[0]?'Rezagado':c===CATS[2]?'Complementario':c===AERO?'Aeróbico':'Principal';
 function xlSheetName(n,used){let s=String(n||'Día').replace(/[\[\]:*?\/\\]/g,' ').trim().slice(0,31)||'Día',b=s,k=2;while(used.has(s.toLowerCase()))s=`${b.slice(0,28)} ${k++}`;used.add(s.toLowerCase());return s}
 async function exportPlanXlsx(id){
   let p;if(id)p=S.plans.find(x=>x.id===id);else{collectPlan();p=S.ui.pd}
@@ -2538,8 +2599,8 @@ async function exportPlanXlsx(id){
   p.days.forEach(d=>{
     const comb=[],kind=[];exGroups(d.rows).forEach(g=>{for(let i=g.s;i<=g.e;i++){comb[i]=g.L;kind[i]=g.n>1?g.kind+(d.rows[i].drop?' + Dropset':''):(d.rows[i].drop?'Dropset':'Aislado')}});
     const aoa=[[String(d.name).toUpperCase()],['Misma letra en Combinación (filas seguidas) = biserie, triserie o megaserie. Deja vacías las series de una fase si ese ejercicio no va en esa fase.'],XL_HEAD];
-    d.rows.forEach((r,i)=>aoa.push([catShort(r.cat),comb[i]||'',kind[i],r.name,...[0,1,2,3].flatMap(f=>r.ph[f]?[r.ph[f][0],r.ph[f][1]]:['','']),r.tempo||'',r.rir??'',r.rest||'',r.unit||'kg',r.video||'']));
-    const ws=X.aoa_to_sheet(aoa);ws['!cols']=[14,12,18,34,9,9,9,9,9,9,9,9,10,6,10,8,36].map(w=>({wch:w}));
+    d.rows.forEach((r,i)=>aoa.push([catShort(r.cat),r.cat===AERO?'':comb[i]||'',r.cat===AERO?'Aeróbico':kind[i],r.name,...[0,1,2,3].flatMap(f=>r.ph[f]?[r.ph[f][0],r.ph[f][1]]:['','']),r.cat===AERO?'':r.tempo||'',r.cat===AERO?'':r.rir??'',r.cat===AERO?'':r.rest||'',r.unit||'kg',r.video||'',r.cat===AERO?r.machine||'Caminadora':'',r.cat===AERO?r.incline??'':'']));
+    const ws=X.aoa_to_sheet(aoa);ws['!cols']=[14,12,18,34,9,9,9,9,9,9,9,9,10,6,10,8,36,14,11].map(w=>({wch:w}));
     X.book_append_sheet(wb,ws,xlSheetName(d.name,used));
   });
   XLSX.writeFile(wb,`${(p.name||'plan').replace(/[^\wáéíóúñü -]/gi,'').trim().replace(/\s+/g,'-')||'plan'}.xlsx`);
@@ -2561,16 +2622,17 @@ function parseTrainingWorkbook(wb,fname){
       else if(/^series?$/.test(h))col.sets=c;else if(/^reps?$|repetici/.test(h))col.reps=c;
       else if(/grupo|categor/.test(h))col.cat=c;else if(/combin/.test(h))col.combo=c;else if(/^tipo/.test(h))col.type=c;
       else if(/^ejercicio$/.test(h))col.name=c;else if(/tempo/.test(h))col.tempo=c;else if(/^rir/.test(h))col.rir=c;
-      else if(/desc|rest/.test(h))col.rest=c;else if(/unidad|unit/.test(h))col.unit=c;else if(/video|link/.test(h))col.video=c}
+      else if(/m[aá]quina|equipo/.test(h))col.machine=c;else if(/inclin/.test(h))col.incline=c;else if(/desc|rest/.test(h))col.rest=c;else if(/unidad|unit/.test(h))col.unit=c;else if(/video|link/.test(h))col.video=c}
     const na=v=>/^(na|n\/a|-|—|–)$/i.test(v)?'':v,rows=[];let lastCat='Principal';
     for(let r=hr+1;r<=R.e.r;r++){
       const name=txt(r,col.name);if(!name)continue;if(/^total$/i.test(name))break;
-      const cv=txt(r,col.cat).toLowerCase(),cat=/rezag|activ/.test(cv)?CATS[0]:/complem|acces/.test(cv)?CATS[2]:/princ/.test(cv)?CATS[1]:lastCat;lastCat=cat;
+      const cv=txt(r,col.cat).toLowerCase(),cat=/aer[oó]b|cardio/.test(cv)?AERO:/rezag|activ/.test(cv)?CATS[0]:/complem|acces/.test(cv)?CATS[2]:/princ/.test(cv)?CATS[1]:lastCat;lastCat=cat;
       const ph=[0,1,2,3].map(f=>{const sc=col.ph[f][0]!=null?col.ph[f][0]:col.sets,rc=col.ph[f][1]!=null?col.ph[f][1]:col.reps,s=na(txt(r,sc)),rp=na(txt(r,rc));return s?[s,rp]:null});
       const tv=TYPE_ALIAS(txt(r,col.type)),vc=cell(r,col.video);
-      rows.push({name,cat,ph,tempo:na(txt(r,col.tempo)),rir:na(txt(r,col.rir)),rest:na(txt(r,col.rest)),video:vc?String((vc.l&&vc.l.Target)||vc.v||'').trim():'',unit:/lb|libra/i.test(txt(r,col.unit))?'lb':'kg',link:false,gtype:'',drop:/drop/.test(tv),_c:txt(r,col.combo).toUpperCase(),_t:Object.keys(GSIZE).find(k=>tv.includes(k.toLowerCase()))||''});
+      rows.push({name,cat,ph,tempo:na(txt(r,col.tempo)),rir:na(txt(r,col.rir)),rest:na(txt(r,col.rest)),video:vc?String((vc.l&&vc.l.Target)||vc.v||'').trim():'',unit:/lb|libra/i.test(txt(r,col.unit))?'lb':'kg',...(cat===AERO?{machine:MACHINES.find(m=>m.toLowerCase()===txt(r,col.machine).toLowerCase())||txt(r,col.machine)||'Caminadora',incline:na(txt(r,col.incline)).replace('%','').trim(),tempo:'',rir:'',rest:''}:{}),link:false,gtype:'',drop:/drop/.test(tv),_c:txt(r,col.combo).toUpperCase(),_t:Object.keys(GSIZE).find(k=>tv.includes(k.toLowerCase()))||''});
     }
     if(!rows.length)return;
+    rows.forEach(x=>{if(x.cat===AERO){x._c='';x._t='';x.drop=false;x.ph=x.ph.map(q=>q?[String(parseInt(q[0])||q[0]),zIdx(q[1])?'Z'+zIdx(q[1]):'']:null)}});
     rows.forEach((x,i)=>{const y=rows[i+1];if(x._c&&y&&y._c===x._c&&y.cat===x.cat)x.link=true});
     exGroups(rows).forEach(g=>{if(g.n>1&&rows.slice(g.s,g.e+1).some(x=>x._t==='Superserie'))rows[g.s].gtype='Superserie'});
     for(let i=0;i<rows.length;i++){const g=exGroups(rows).find(g=>i>=g.s&&i<=g.e);if(g.n===1&&rows[i]._t&&!rows[i]._c){setExType(rows,i,rows[i]._t,ref=>({...emptyRow(),cat:ref.cat}))}}
@@ -2787,6 +2849,7 @@ function renderAssignPlan(){
 function apSync(){const ap=S.ui.ap;ap.start=gv('ap_s')||ap.start;if(ap.start<TODAY)ap.start=TODAY;ap.wpp=+gv('ap_w');ap.aid=gv('ap_a');document.querySelectorAll('.ap_m').forEach(el=>ap.map[+el.dataset.i]=+el.value);renderAssignPlan()}
 function dayToBlocks(d,phase){
   return CATS.map(c=>{const all=d.rows.filter(r=>(CATS.includes(r.cat)?r.cat:'Principal')===c);
+    if(c===AERO)return {name:c,exercises:all.filter(r=>r.ph[phase]).map(r=>({name:r.name,cardio:true,sets:'1',reps:'',time:String(r.ph[phase][0]),zone:String(r.ph[phase][1]||''),machine:r.machine||'Caminadora',incline:r.incline??'',video:r.video||(typeof S!=='undefined'&&S&&S.library?(libFind(r.name)?.video||''):'')}))};
     return {name:c,exercises:all.map((r,i)=>r.ph[phase]?{name:r.name,sets:String(r.ph[phase][0]),reps:String(r.ph[phase][1]??''),rest:r.rest||'',tempo:r.tempo||'',rir:r.rir??'',video:r.video||(typeof S!=='undefined'&&S&&S.library?(libFind(r.name)?.video||''):''),link:!!(r.link&&all[i+1]&&all[i+1].ph[phase]),gtype:r.gtype||'',drop:!!r.drop,unit:r.unit||'kg'}:null).filter(Boolean)}}).filter(b=>b.exercises.length);
 }
 function assignPlan(){
@@ -2873,6 +2936,7 @@ const HELP={
   actividad:{t:'Otra actividad',b:'Si hiciste algo fuera de tu plan (correr, bici, un partido), regístralo para que también cuente en tu carga de la semana.'},
   peso:{t:'Peso corporal',b:'Pésate en ayunas, a la misma hora y en la misma báscula para que tus datos se puedan comparar.'},
   periodo_dia:{t:'Día de tu periodo',b:'Toca el día de tu periodo en el que vas (día 1 = el primer día de sangrado). Con eso calculamos tu fase y tu coach puede ajustar la intensidad, por ejemplo bajar un poco el peso los primeros días si lo necesitas. Cuando termine, toca «Ya terminó». Solo lo ven tú y tu coach.'},
+  fce:{t:'¿Qué es la FCE?',b:'Es tu frecuencia cardiaca de entrenamiento: las pulsaciones por minuto en las que debes mantenerte durante el cardio. Se calcula con tu edad y tu frecuencia cardiaca en reposo (fórmula de Karvonen). Zona 1 = muy suave … Zona 5 = máxima. Si usas reloj o banda, procura quedarte en ese rango.'},
   irregular:{t:'Ciclo irregular',b:'Actívalo si tu periodo no llega cada mes en la misma fecha. Así la app no adivina cuándo te toca: solo cuenta tu periodo cuando tú lo marcas, el día que empiece.'},
   ciclo:{t:'Fase menstrual',b:'Es opcional. Si lo incluyes, con la fecha en que empezó tu última menstruación y cuántos días dura tu ciclo calculamos en qué fase estás. Tu energía y fuerza cambian según la fase, y tu coach lo usa para ajustar la intensidad. Solo lo ven tú y tu coach.'},
   comp:{t:'Tu composición',b:'Tu peso, cuánto de tu cuerpo es grasa y cuánta energía gastas al día. IMC compara tu peso con tu estatura. IMM muestra cuánto músculo tienes para tu estatura. GEB es lo que tu cuerpo gasta en reposo y GET es todo lo que gastas en un día normal, contando tu actividad.'},

@@ -49,3 +49,10 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - Lee: hojas de días (plan), «Datos del plan», «Datos del cliente» y «Nutrición». Muestra una vista previa y el coach elige qué aplicar.
 - El plan se asigna al cliente y se programa en su calendario desde la fecha elegida (L–V o L–S); reemplaza las sesiones pendientes del plan anterior y conserva las completadas.
 - También lee la plantilla anterior `plantilla-plan.xlsx`.
+
+## Trabajo aeróbico
+
+- Categoría «Aeróbico / cardio» en el editor de plan y botón «Agregar bloque aeróbico» en el editor de sesión (también cuenta cualquier bloque llamado Cardio/Aeróbico).
+- En esos ejercicios se cambian series/reps/RIR/tempo/descanso por: Máquina, Tiempo (min), Inclinación (solo caminadora), Zona Karvonen (Z1–Z5) y FCE en lpm (se calcula con la edad y la FC en reposo del cliente).
+- En el plan, cada fase lleva minutos y zona. El atleta lo ve con 🏃 y lo marca como «Hecho».
+- Excel: Grupo = Aeróbico; en F1–F4 Series van los minutos y en F1–F4 Reps la zona; columnas Máquina e Inclinación.
