@@ -683,6 +683,10 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .pday.on .cdrop{color:#fff}
 .pday.end{border-style:dashed;color:#9d174d}
 @media (prefers-reduced-motion:reduce){.per-ico{animation:none}}
+.gq{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:1.5px dashed #f9a8d4;background:#fff7fb;color:#be185d;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.gq .cdrop{color:#ec4899}
+.per-coach{margin-top:12px;max-width:620px}
+.per-coach .per{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -1358,7 +1362,7 @@ function coachHTML(compact){
     </div>
     <div class="card cl-head">
       ${avatarHTML(a)}
-      <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}</div>
+      <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}${!genderOf(a)?`<button type="button" class="gq" onclick="openNewAthlete('${a.id}')">${dropSVG(13)} Indica su género para activar la fase menstrual</button>`:''}${genderOf(a)==='Mujer'?`<div class="per-coach">${periodDayHTML(a,'coach')}</div>`:''}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
         ${a.plan&&!a.plan.scheduled?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
@@ -1437,7 +1441,7 @@ function openCoachNotifs(){
   S.activity.forEach(x=>x.read=true);save();renderApp();
 }
 function openNewAthlete(id){
-  S.ui.cycA=id||null;
+  S.ui.cycA=id||null;S.ui.newCyc=0;
   const a=id?S.athletes.find(x=>x.id===id):{name:'',email:'',age:'',gender:'Mujer',occupation:'',sport:'',hrRest:'',goal:'Hipertrofia'};
   const w=id?(lastWeight(id)??''):'';
   openModal(`<div class="modal"><div class="modal-h"><h3>${ic(id?'edit':'userplus',18)} ${id?'Perfil del cliente':'Añadir cliente'}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>
@@ -1448,7 +1452,7 @@ function openNewAthlete(id){
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:170px"><label>Ocupación</label><input id="na_oc" value="${esc(a.occupation||'')}" placeholder="Ej. Contadora"></div><div class="field" style="min-width:170px"><label>Deporte</label><input id="na_sp" list="dl_sp" value="${esc(a.sport||'')}" placeholder="Ej. Running, crossfit"><datalist id="dl_sp">${['Gimnasio / pesas','Running','Crossfit','Ciclismo','Natación','Fútbol','Powerlifting','Triatlón','Funcional'].map(s=>`<option value="${s}">`).join('')}</datalist></div><div class="field" style="min-width:150px"><label>FC en reposo (lpm) ${qm('fcrep')}</label><input id="na_hr" type="number" min="30" max="120" value="${esc(a.hrRest||'')}" placeholder="Ej. 62" oninput="naZones()"></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:110px"><label>Estatura (cm)</label><input id="na_h" type="number" min="100" max="230" value="${esc(a.height||'')}" oninput="naComp()"></div><div class="field" style="min-width:110px"><label>% grasa</label><input id="na_bf" type="number" step="0.1" min="3" max="70" value="${esc(a.bodyFat??(id?lastEvoOf(id,'grasa')??'':''))}" oninput="naComp()"></div><div class="field" style="min-width:130px"><label>Masa muscular (kg) ${qm('imm')}</label><input id="na_mm" type="number" step="0.1" value="${esc(a.muscleMass||'')}" oninput="naComp()"></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:200px"><label>Nivel de actividad (para el GET)</label><select id="na_act" onchange="naComp()">${ACT.map(([f,l])=>`<option value="${f}" ${(+a.activity||1.55)===f?'selected':''}>${l} · ×${f}</option>`).join('')}</select></div><div class="field" style="min-width:120px"><label>GEB medido (opcional)</label><input id="na_geb" type="number" value="${esc(a.geb||'')}" placeholder="auto" oninput="naComp()"></div><div class="field" style="min-width:120px"><label>Kcal del plan</label><input id="na_kt" type="number" value="${esc(a.kcalTarget||'')}" placeholder="kcal/día"></div><div class="field" style="min-width:110px"><label>Peso meta (kg)</label><input id="na_gw" type="number" step="0.1" value="${esc(a.goalWeight||'')}"></div></div>
-    <div id="na_cyc">${id&&genderOf(a)==='Mujer'?cycleHTML(a,'coach'):''}</div>
+    <div id="na_cyc">${id?(genderOf(a)==='Mujer'?cycleHTML(a,'coach'):''):(a.gender==='Mujer'?periodDayHTML({id:'__new',name:''},'coach'):'')}</div>
     <div id="na_comp"></div>
     <div id="na_z"></div>
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:180px"><label>Objetivo</label><select id="na_g">${['Hipertrofia','Definición','Fuerza','Recomposición corporal','Rendimiento deportivo','Salud general'].map(g=>`<option ${a.goal===g?'selected':''}>${g}</option>`).join('')}</select></div>
@@ -1458,13 +1462,16 @@ function openNewAthlete(id){
   naZones();naComp();
 }
 function naGender(){const el=document.getElementById('na_cyc'),id=S.ui.cycA;if(!el)return;const a=S.athletes.find(x=>x.id===id);
-  if(gv('na_gen')==='Mujer'){if(a){const tmp={...a,gender:'Mujer',genderTs:Date.now()+1};el.innerHTML=cycleHTML(tmp,'coach')}else el.innerHTML='<div class="cyc"><div class="ch"><span class="ico">'+ic('drop',17)+'</span><div style="flex:1"><b>Fase menstrual</b><div class="muted" style="font-size:12px">Podrás incluir este dato después de crear el cliente.</div></div></div></div>'}else el.innerHTML='';naComp()}
+  if(gv('na_gen')==='Mujer'){if(a){const tmp={...a,gender:'Mujer',genderTs:Date.now()+1};el.innerHTML=cycleHTML(tmp,'coach')}else el.innerHTML=periodDayHTML({id:'__new',name:''},'coach')}else el.innerHTML='';naComp()}
 function naComp(){const el=document.getElementById('na_comp');if(!el)return;const tmp={id:'__tmp',age:gv('na_age'),gender:gv('na_gen'),height:gv('na_h'),bodyFat:gv('na_bf'),muscleMass:gv('na_mm'),activity:gv('na_act'),geb:gv('na_geb')};const w=parseFloat(gv('na_w'));const c=bodyComp(tmp,isNaN(w)?null:w);
   el.innerHTML=(c.imc||c.geb)?`<div class="note" style="margin-bottom:12px">${c.imc?`IMC <b>${c.imc.toFixed(1)}</b> · `:''}${c.lean?`Masa libre de grasa <b>${c.lean.toFixed(1)} kg</b> · `:''}${c.imm?`IMM <b>${c.imm.toFixed(1)}</b> · `:''}${c.geb?`GEB <b>${fmtN(c.geb)}</b> kcal (${c.gebSrc}) · GET <b>${fmtN(c.get)}</b> kcal`:''}</div>`:''}
 function naZones(){const el=document.getElementById('na_z');if(!el)return;const k=karvonen({age:gv('na_age'),hrRest:gv('na_hr')});el.innerHTML=k?`<div class="note" style="margin-bottom:12px"><b>Zonas de FC (Karvonen)</b> · FC máx ${k.max} lpm · FC de reserva ${k.res} lpm<br>${k.z.map((z,i)=>`Z${i+1}: ${z.lo}–${z.hi}`).join(' · ')} lpm</div>`:`<div class="muted" style="font-size:12px;margin:-4px 0 12px">Con la edad y la FC en reposo se calculan sus zonas de entrenamiento (Karvonen).</div>`}
 function lastWeight(aid){const e=S.evo.filter(x=>x.athleteId===aid&&x.peso!=null).sort((x,y)=>y.date.localeCompare(x.date))[0];return e?e.peso:null}
 /* Género: lo puede cambiar el coach (perfil) o el atleta (Progreso); gana el cambio más reciente */
-function genderOf(a){if(!a)return '';const p=S.evo.filter(e=>e.kind==='prof'&&e.athleteId===a.id&&e.gender).sort((x,y)=>y.ts-x.ts)[0];return p&&(!a.genderTs||p.ts>a.genderTs)?p.gender:(a.gender||'')}
+const FEM_N=new Set('ana andrea adriana alejandra alicia alondra amanda amparo angela angelica anahi araceli ariadna arleth aurora azucena beatriz belen berenice blanca brenda carla carmen carolina catalina cecilia celia citlali claudia cristina daniela dayana denisse diana dulce elena elisa elizabeth elsa emilia esmeralda estefania esther eva fabiola fatima fernanda flor frida gabriela georgina gloria graciela guadalupe hilda irene iris isabel itzel ivonne jacqueline janet jazmin jessica jimena josefina juana julia karen karina karla kasandra kassandra katia laura leticia liliana linda lizbeth lizeth lorena lourdes lucia luisa luz magdalena maite marcela margarita maria mariana maribel maricela marisol marlene marta martha masiel melissa mercedes michelle miriam monica montserrat nadia nancy natalia nayeli nelly noemi norma olga paola patricia paula paulina perla pilar priscila raquel rebeca regina rocio rosa rosario ruth sandra sara sarahi silvia sofia sonia susana tania teresa valentina valeria vanessa veronica victoria viridiana ximena yadira yesenia yolanda zaira'.split(' '));
+const MAS_N=new Set('aaron abraham adan adolfo adrian agustin alan alberto alejandro alfonso alfredo andres angel antonio armando arturo benjamin bernardo bruno carlos cesar christian cristian daniel david diego eduardo efrain emilio emiliano enrique erick ernesto esteban eugenio federico felipe fernando francisco gabriel gerardo gilberto gonzalo guillermo gustavo hector hugo ignacio isaac ismael ivan jaime javier jesus joaquin jorge jose josue juan julio leonardo leonel luis manuel marco marcos mario martin mateo mauricio miguel moises nicolas oscar pablo pedro rafael ramon raul ricardo roberto rodrigo rogelio ruben salvador samuel santiago sebastian sergio tomas ulises uriel victor vicente'.split(' '));
+function guessGender(name){const f=String(name||'').trim().split(/\s+/)[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(!f)return '';return FEM_N.has(f)?'Mujer':MAS_N.has(f)?'Hombre':''}
+function genderOf(a){if(!a)return '';const p=S.evo.filter(e=>e.kind==='prof'&&e.athleteId===a.id&&e.gender).sort((x,y)=>y.ts-x.ts)[0];return p&&(!a.genderTs||p.ts>a.genderTs)?p.gender:(a.gender||guessGender(a.name))}
 /* Ciclo menstrual (solo mujeres): último registro tipo 'cycle' en pt_evo; lo pueden editar atleta y coach */
 const cycleOf=aid=>S.evo.filter(e=>e.kind==='cycle'&&e.athleteId===aid).sort((x,y)=>y.ts-x.ts)[0]||null;
 function cyclePhase(c,ds){
@@ -1475,11 +1482,12 @@ function cyclePhase(c,ds){
 const PH_TIP={Menstrual:'Días de sangrado. Es normal tener menos energía; se puede bajar un poco la intensidad si hace falta.',Folicular:'La energía suele subir. Buen momento para entrenamientos más pesados.',Ovulatoria:'Fuerza y energía altas. Cuida la técnica: hay un poco más de laxitud en articulaciones.',Lútea:'Puede haber más cansancio, hinchazón o antojos. La sensación de esfuerzo suele ser mayor.'};
 const dropSVG=(s=18,cls='')=>`<svg class="cdrop ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-.35 0-.66.18-.85.47C9.5 5.6 5 11.4 5 15.2A7 7 0 0 0 19 15.2c0-3.8-4.5-9.6-6.15-12.13A1 1 0 0 0 12 2.6z" fill="currentColor"/><ellipse cx="9.2" cy="14.6" rx="1.35" ry="2.5" fill="#fff" opacity=".75" transform="rotate(-18 9.2 14.6)"/><circle cx="10.4" cy="10.9" r=".8" fill="#fff" opacity=".6"/></svg>`;
 function periodDayHTML(a,role){
-  const c=cycleOf(a.id),p=cyclePhase(c),cur=p&&p.menstrual?p.day:0,me=role==='athlete';
-  return `<div class="per"><div class="per-h"><span class="per-ico">${dropSVG(22)}</span><div style="flex:1;min-width:160px"><b>${me?'¿En qué día de tu periodo estás?':'¿En qué día de su periodo está?'}</b>${qm('periodo_dia')}<div class="per-s">${cur?`Hoy: <b>día ${cur}</b> de ${me?'tu':'su'} periodo`:me?'Toca el día en el que vas. Si no estás en tu periodo, déjalo así.':'Sin periodo registrado hoy.'}</div></div></div>
+  const nw=a.id==='__new',c=nw?null:cycleOf(a.id),p=cyclePhase(c),cur=nw?(S.ui.newCyc||0):p&&p.menstrual?p.day:0,me=role==='athlete';
+  return `<div class="per"><div class="per-h"><span class="per-ico">${dropSVG(22)}</span><div style="flex:1;min-width:160px"><b>${me?'¿En qué día de tu periodo estás?':'¿En qué día de su periodo está?'}</b>${qm('periodo_dia')}<div class="per-s">${cur?`Hoy: <b>día ${cur}</b> de ${me?'tu':'su'} periodo`:me?'Toca el día en el que vas. Si no estás en tu periodo, déjalo así.':nw?'Opcional: marca el día si hoy está en su periodo.':'Sin periodo registrado hoy.'}</div></div></div>
     <div class="per-days">${[1,2,3,4,5].map(n=>`<button type="button" class="pday ${cur===n?'on':''}" aria-pressed="${cur===n}" onclick="cycDay('${a.id}','${role}',${n})">${dropSVG(15)}<span>Día ${n}</span></button>`).join('')}${cur?`<button type="button" class="pday end" onclick="cycDay('${a.id}','${role}',0)">Ya terminó</button>`:''}</div></div>`;
 }
 function cycDay(aid,role,n){
+  if(aid==='__new'){S.ui.newCyc=n;const el=document.getElementById('na_cyc');if(el)el.innerHTML=periodDayHTML({id:'__new',name:''},'coach');return}
   S.ui.cycA=aid;const c=cycleOf(aid),p=cyclePhase(c),a=S.athletes.find(x=>x.id===aid),first=(a.name||'').split(' ')[0];
   if(n>0){const prev=c||{};cycWrite(aid,{tracking:true,last:addDays(TODAY,-(n-1)),plen:Math.max(+prev.plen||5,n),endDay:null,endFor:null});
     if(role==='athlete')pushActivity(aid,'ready',`registró que va en el día ${n} de su periodo`);toast(role==='athlete'?`Listo: día ${n} de tu periodo 💧`:`${first}: día ${n} de su periodo`)}
@@ -1591,7 +1599,8 @@ function saveAthlete(id){
   const pid=gv('na_p'),btn=document.querySelector('#modalRoot .modal-f .btn.primary');btn.disabled=true;btn.textContent='Creando acceso…';
   createAccount(n,em).then(r=>{
     const a={...data,id:em,email:em,color:colorFor(em)};
-    S.athletes.push(a);S.ui.athleteId=a.id;S.ui.section='clientes';S.ui.coachTab='plan';
+    S.athletes.push(a);S.ui.athleteId=a.id;
+    if(data.gender==='Mujer'&&S.ui.newCyc){const n=S.ui.newCyc;cycWrite(a.id,{tracking:true,last:addDays(TODAY,-(n-1)),plen:Math.max(5,n)})}S.ui.newCyc=0;S.ui.section='clientes';S.ui.coachTab='plan';
     if(!isNaN(w))S.evo.push({id:uid(),athleteId:a.id,date:TODAY,peso:w});
     commit();showCreds(n,em,r.password,r.existed,pid);
   }).catch(err=>{btn.disabled=false;btn.textContent='Crear cliente';toast('No se pudo crear la cuenta: '+(err.message||err))});
