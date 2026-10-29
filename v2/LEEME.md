@@ -29,3 +29,9 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - Una sesión ya asignada se edita desde su detalle (botón Editar); puede aplicarse a las siguientes sesiones iguales. Las sesiones editadas a mano no se sobrescriben al guardar el plan.
 - Al guardar un plan se actualizan sus sesiones pendientes del calendario (casilla en el editor).
 - Excel: `plantilla-entrenamiento.xlsx` (Plantillas → Descargar plantilla Excel / Subir Excel). También se lee la plantilla anterior `plantilla-plan.xlsx`. Cada plan se puede exportar a Excel y volver a cargar.
+
+## Demo privado para coaches
+
+- Se abre solo con el enlace `https://atletas.headcoachleonardopablo.com/#demo=<clave>`. El repo guarda únicamente el hash SHA-256 de la clave (`DEMO.HASH` en `index.html`); para cambiar la clave, genera una nueva y reemplaza el hash.
+- No usa Supabase: todo vive en el navegador del visitante (localStorage), con 4 clientes ficticios, planes, historial, alimentación y medidas. Cada visitante tiene su propia copia; «Reiniciar demo» la borra.
+- Funciona igual que la app real: crear clientes (genera correo y contraseña de demo), planes, tareas, Excel, vista del atleta.
