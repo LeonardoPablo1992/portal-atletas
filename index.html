@@ -761,6 +761,31 @@ details.lgrp[open] summary{background:var(--green-50);border-bottom:1px solid va
 .lg-v{flex:1;font-size:11px;font-weight:600;color:#e11d48;display:inline-flex;align-items:center;gap:4px}
 details.lgrp .chev{transition:.2s;color:var(--muted)}
 details.lgrp[open] .chev{transform:rotate(180deg)}
+.priv-wrap{max-width:680px;margin:28px auto;padding:0 14px}
+.priv-card{background:#fff;border:1px solid var(--green-200);border-radius:22px;padding:22px 20px;box-shadow:0 10px 30px rgba(22,163,74,.08);animation:delIn .3s ease}
+.priv-card.cancel{text-align:center;border-color:#fed7aa;background:linear-gradient(135deg,#fff7ed,#fff)}
+.priv-card h2{margin:0;font-size:21px}
+.priv-h{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.priv-ic{font-size:28px;width:52px;height:52px;border-radius:16px;background:var(--green-50);display:grid;place-items:center;flex-shrink:0}
+.priv-card.cancel .priv-ic{margin:0 auto 8px;background:#fff}
+.priv-sum{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5}
+.priv-sum a,.priv-line a,.priv-card a{color:var(--green-d)}
+.priv-more{margin:12px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.priv-more summary{cursor:pointer;padding:11px 14px;font-weight:700;font-size:14px;color:var(--green-d);list-style:none}
+.priv-more summary::-webkit-details-marker{display:none}
+.privtxt{max-height:46vh;overflow:auto;padding:4px 16px 14px;font-size:13.5px;line-height:1.55;border-top:1px solid var(--line)}
+.privtxt h1{font-size:18px;margin:12px 0 2px}.privtxt h2{font-size:15px;color:var(--green-d);margin:16px 0 6px}.privtxt h3{font-size:14px;margin:10px 0 4px}
+.privtxt .toc{display:none}.privtxt .box,.privtxt .sens{background:var(--green-50);border-radius:10px;padding:8px 10px}.privtxt .sens{background:#fff1f5}
+.privtxt table{border-collapse:collapse;width:100%}.privtxt td,.privtxt th{border:1px solid var(--line);padding:6px;text-align:left}
+.priv-chk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:10px 0;cursor:pointer;line-height:1.45}
+.priv-chk input{width:20px;height:20px;accent-color:var(--green);flex-shrink:0;margin-top:1px}
+.priv-chk.req{background:var(--green-50);border:1px solid var(--green-200);border-radius:12px;padding:10px 12px}
+.priv-chk em{color:var(--muted);font-style:normal;font-size:12px}
+.priv-f{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.priv-card.cancel .priv-f{justify-content:center}
+.priv-line{text-align:center;font-size:12px;color:var(--muted);margin:10px 8px 0}
+.priv-st{font-size:12px;color:#b45309;margin-top:6px}
+.priv-st.ok{color:var(--green-d)}
 </style>
 </head>
 <body>
@@ -1244,7 +1269,7 @@ function demoLoginHTML(msg){
     <p class="muted" style="margin:0 0 16px;font-size:13px">Entra con el correo y la contraseña de demo que te compartieron.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="username" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar al demo</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">Todo lo que hagas aquí son datos de ejemplo y no sale de este navegador. <a href="#" onclick="event.preventDefault();demoReset()" style="color:var(--green-d)">Reiniciar demo</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">Todo lo que hagas aquí son datos de ejemplo y no sale de este navegador. <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a> · <a href="#" onclick="event.preventDefault();demoReset()" style="color:var(--green-d)">Reiniciar demo</a></p></div></div>`;
 }
 function seedDemo(){
   /* Demo en limpio: sin clientes. Solo se dejan la biblioteca y las plantillas base, sin nombres de atletas reales. */
@@ -1277,7 +1302,7 @@ function renderLoginV2(msg){
     <h2 style="margin:0 0 4px">Entrar</h2><p class="muted" style="margin:0 0 16px;font-size:13px">Usa el mismo correo y contraseña de tu portal de atletas.</p>
     ${msg?`<div class="info" style="background:#fee2e2;color:#991b1b">${esc(msg)}</div>`:''}
     <form onsubmit="event.preventDefault();doLogin()"><div class="field"><label>Correo</label><input id="lg_e" type="email" autocomplete="email" inputmode="email" required></div><div class="field"><label>Contraseña</label><input id="lg_p" type="password" autocomplete="current-password" required></div><button class="btn primary full" id="lg_b">Entrar</button></form>
-    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="/anterior/" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="/anterior/#crear-cuenta" style="color:var(--green-d)">Créala</a></p></div></div>`;
+    <p style="font-size:12px;margin:14px 0 0" class="muted">¿Olvidaste tu contraseña? <a href="/anterior/" style="color:var(--green-d)">Recupérala aquí</a> · ¿No tienes cuenta? <a href="/anterior/#crear-cuenta" style="color:var(--green-d)">Créala</a> · <a href="/aviso-de-privacidad/" target="_blank" rel="noopener" style="color:var(--green-d)">Aviso de privacidad</a></p></div></div>`;
 }
 async function doLogin(){const b=document.getElementById('lg_b');b.disabled=true;b.textContent='Entrando…';
   const {data,error}=await SB.auth.signInWithPassword({email:gv('lg_e').toLowerCase(),password:document.getElementById('lg_p').value});
@@ -1386,8 +1411,63 @@ function renderTop(){
     `<button class="${m==='split'?'on':''}" onclick="setMode('split')">${ic('split',15)}<span class="lbl">Vista dividida</span></button>`;
 }
 function setMode(m){S.ui.mode=m;commit()}
+/* =========================================================
+   AVISO DE PRIVACIDAD (LFPDPPP 2025)
+   Cada cliente debe aceptarlo al entrar (nuevos y actuales) hasta aceptar la versión vigente.
+   Aceptar = continúa · Cancelar = no avanza, puede salir.
+   Registro de la aceptación: pt_evo kind 'privacy' (versión, fecha, sensibles, secundarias).
+========================================================= */
+const PRIVACY={version:'1.0',date:'29 de octubre de 2026',url:'/aviso-de-privacidad/'};
+const PRIV={cancel:false,full:'',loading:false,open:false};
+const privacyRec=aid=>S&&S.evo.find(e=>e.kind==='privacy'&&e.athleteId===aid&&e.version===PRIVACY.version&&e.accepted)||null;
+const privacyBlocked=()=>!!(S&&ME&&!IS_COACH&&!privacyRec(ME.email));
+function privLoadFull(){
+  if(PRIV.full||PRIV.loading)return;PRIV.loading=true;
+  fetch(PRIVACY.url,{cache:'no-store'}).then(r=>r.text()).then(t=>{const d=new DOMParser().parseFromString(t,'text/html'),a=d.querySelector('#aviso');PRIV.full=a?a.innerHTML:''}).catch(()=>{PRIV.full=''}).finally(()=>{PRIV.loading=false;const el=document.getElementById('privFull');if(el)el.innerHTML=privFullHTML()});
+}
+function privFullHTML(){return PRIV.full?`<div class="privtxt">${PRIV.full}</div>`:PRIV.loading?'<div class="muted" style="padding:10px">Cargando el aviso completo…</div>':`<div style="padding:10px">No se pudo cargar aquí. <a href="${PRIVACY.url}" target="_blank" rel="noopener">Ábrelo en otra pestaña</a>.</div>`}
+function renderPrivacyGate(){
+  const app=document.getElementById('app'),a=curA()||{},fn=esc(String(a.name||ME.name||'').split(' ')[0]||'');
+  if(PRIV.cancel){
+    app.innerHTML=`<div class="priv-wrap"><div class="priv-card cancel"><div class="priv-ic">😕</div><h2>No aceptaste el aviso de privacidad</h2>
+      <p>Sin tu consentimiento no podemos mostrarte tu plan ni guardar tu información de entrenamiento. <b>No registramos ningún dato nuevo.</b></p>
+      <p class="muted">Puedes revisarlo de nuevo cuando quieras, o salir de la plataforma.</p>
+      <div class="priv-f"><button class="btn ghost" onclick="logout()">Salir</button><button class="btn primary" onclick="PRIV.cancel=false;renderPrivacyGate()">Revisar de nuevo</button></div>
+      <p class="muted" style="font-size:12px;margin:14px 0 0">¿Dudas? Escríbenos a <a href="mailto:coach@headcoachleonardopablo.com">coach@headcoachleonardopablo.com</a></p></div></div>`;
+    return;
+  }
+  app.innerHTML=`<div class="priv-wrap"><div class="priv-card" role="dialog" aria-labelledby="privT">
+    <div class="priv-h"><span class="priv-ic">🔒</span><div><h2 id="privT">Aviso de privacidad</h2><div class="muted" style="font-size:12.5px">Versión ${PRIVACY.version} · ${PRIVACY.date}</div></div></div>
+    <p>Hola${fn?' '+fn:''} 👋 Antes de continuar, lee cómo cuidamos tus datos. Para usar la plataforma necesitamos tu aceptación.</p>
+    <div class="priv-sum">
+      <div><b>Responsable:</b> Leonardo Daniel Pablo Torres («Head Coach Leonardo Pablo» · ProTrainerPlus), Matías Romero 1014, Col. Del Valle, Alcaldía Benito Juárez, C.P. 03100, Ciudad de México.</div>
+      <div><b>Datos que tratamos:</b> identificación y contacto, datos de tu cuenta y de tus entrenamientos. Además, <b>datos sensibles de salud</b>: peso y composición corporal, frecuencia cardiaca, cómo dormiste, comiste y tu energía, tu alimentación y, si lo registras, tu ciclo menstrual.</div>
+      <div><b>Para qué (finalidades primarias):</b> crear tu cuenta; diseñar, ajustar y dar seguimiento a tu plan de entrenamiento y alimentación; cuidar tu salud ajustando la intensidad; comunicarnos contigo; cobrar, facturar y cumplir la ley.</div>
+      <div><b>Finalidades secundarias (opcionales):</b> promociones, encuestas y estadísticas anónimas. Puedes negarte: deja sin marcar la casilla de abajo o escríbenos.</div>
+      <div><b>Tus derechos:</b> acceso, rectificación, cancelación, oposición (ARCO) y revocación, escribiendo a <a href="mailto:coach@headcoachleonardopablo.com">coach@headcoachleonardopablo.com</a>. No vendemos tus datos.</div>
+    </div>
+    <details class="priv-more" ${PRIV.open?'open':''} ontoggle="PRIV.open=this.open;if(this.open)privLoadFull()"><summary>📄 Leer el aviso de privacidad completo</summary><div id="privFull">${privFullHTML()}</div></details>
+    <label class="priv-chk req"><input type="checkbox" id="pv_s" onchange="privCheck()"> <span>He leído el aviso de privacidad y otorgo mi <b>consentimiento expreso y por escrito</b> para el tratamiento de mis datos personales, incluidos mis <b>datos sensibles de salud</b>, para las finalidades primarias. <em>(obligatorio)</em></span></label>
+    <label class="priv-chk"><input type="checkbox" id="pv_2"> <span>Acepto que mis datos se usen para las finalidades secundarias: promociones, encuestas y estadísticas anónimas. <em>(opcional)</em></span></label>
+    <div class="muted" style="font-size:12px;margin:6px 0 0">Si eres menor de 18 años, pide a tu madre, padre o tutor que lo lea y acepte contigo.</div>
+    <div class="priv-f"><button class="btn ghost" onclick="privCancel()">Cancelar</button><button class="btn primary" id="pv_ok" disabled onclick="privAccept()">${ic('check',15)} Aceptar y continuar</button></div>
+  </div></div>`;
+  if(PRIV.open)privLoadFull();
+}
+function privCheck(){const b=document.getElementById('pv_ok');if(b)b.disabled=!document.getElementById('pv_s').checked}
+function privCancel(){PRIV.cancel=true;renderPrivacyGate();scrollTo(0,0)}
+function privAccept(){
+  if(!document.getElementById('pv_s')?.checked)return;
+  const sec=!!document.getElementById('pv_2')?.checked;
+  S.evo.push({id:`privacy-${ME.email}-${PRIVACY.version}`,athleteId:ME.email,date:TODAY,kind:'privacy',version:PRIVACY.version,accepted:true,sensitive:true,secondary:sec,ts:Date.now(),ua:String(navigator.userAgent||'').slice(0,160)});
+  pushActivity(ME.email,'ready',`aceptó el aviso de privacidad (v${PRIVACY.version})${sec?' y las finalidades secundarias':''}`);
+  PRIV.cancel=false;commit();scrollTo(0,0);toast('¡Gracias! Ya puedes continuar');
+}
+function privProfileHTML(aid){const r=privacyRec(aid);return `<div class="priv-line">🔒 <span>Aviso de privacidad${r?` v${esc(r.version)} · aceptado el ${dmy(r.date)}${r.secondary?' · con finalidades secundarias':''}`:' · pendiente'}</span> <a href="${PRIVACY.url}" target="_blank" rel="noopener">Ver aviso</a></div>`}
+
 function renderApp(){
   renderTop();
+  if(privacyBlocked()){renderPrivacyGate();return}
   const app=document.getElementById('app'), m=IS_COACH?S.ui.mode:'athlete';
   if(IS_COACH&&!S.athletes.length&&m!=='athlete'){app.innerHTML=`<div class="coach"><aside class="side"><div class="side-h"><span>Mis clientes</span><span class="count">0</span></div></aside><section class="main">${secnavHTML()}${S.ui.section==='biblioteca'?libraryHTML():S.ui.section==='plantillas'?plansHTML():`<div class="card empty-state" style="padding:40px">${ic('users',30)}<h3>Aún no tienes clientes</h3><button class="btn primary" onclick="openNewAthlete()">${ic('userplus',15)} Añadir cliente</button></div>`}</section></div>`;return}
   if(!IS_COACH&&!S.athletes.length){app.innerHTML='<div class="empty-state" style="padding:80px 20px">Sin datos.</div>';return}
@@ -1451,7 +1531,7 @@ function coachHTML(compact){
     </div>
     <div class="card cl-head">
       ${avatarHTML(a)}
-      <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}${!genderOf(a)?`<button type="button" class="gq" onclick="openNewAthlete('${a.id}')">${dropSVG(13)} Indica su género para activar la fase menstrual</button>`:''}${genderOf(a)==='Mujer'?`<div class="per-coach">${periodDayHTML(a,'coach')}</div>`:''}</div>
+      <div><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(a.name)} ${tlPill(trafficDay(tlCtx(a.id),TODAY))}</h2><div class="muted" style="font-size:12px">${esc(a.email)} · ${esc(a.goal)}</div>${profileChips(a)}<div class="priv-st ${privacyRec(a.id)?'ok':''}">🔒 Aviso de privacidad: ${privacyRec(a.id)?`aceptado el ${dmy(privacyRec(a.id).date)}${privacyRec(a.id).secondary?' · con secundarias':''}`:'pendiente (se le pedirá al entrar)'}</div>${!genderOf(a)?`<button type="button" class="gq" onclick="openNewAthlete('${a.id}')">${dropSVG(13)} Indica su género para activar la fase menstrual</button>`:''}${genderOf(a)==='Mujer'?`<div class="per-coach">${periodDayHTML(a,'coach')}</div>`:''}</div>
       <div class="acts">
         <button class="icon-btn" title="Notificaciones" onclick="openCoachNotifs()">${ic('bell',16)}${unreadAll?`<span class="badge-dot">${unreadAll}</span>`:''}</button>
         ${a.plan&&!a.plan.scheduled?`<button class="btn soft" onclick="openCoachPlan('${a.id}')">${ic('layers',15)} Plan actual</button>`:''}
@@ -1748,6 +1828,7 @@ function profilePageHTML(a){
     <div class="c"><div class="l">Alimentación</div>${v(kc?fmtN(kc):null,kc?'kcal/día':'')}</div>
   </div></div>
   <div class="muted" style="font-size:12px;text-align:center;margin:4px 8px 12px">Estos datos los registra tu coach. Si algo no es correcto, <a href="#" onclick="event.preventDefault();openAthChat()" style="color:var(--green-d);font-weight:600">avísale por mensaje</a>.</div>
+  ${privProfileHTML(a.id)}
   ${delZoneHTML()}`;
 }
 /* Foto de perfil: se reduce en el navegador (320 px, JPEG) y se guarda en pt_evo; el atleta y el coach la pueden cambiar */

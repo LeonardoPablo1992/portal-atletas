@@ -57,3 +57,10 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - En esos ejercicios se cambian series/reps/RIR/tempo/descanso por: Máquina, Tiempo (min), Inclinación (solo caminadora), Zona Karvonen (Z1–Z5) y FCE en lpm (se calcula con la edad y la FC en reposo del cliente).
 - En el plan, cada fase lleva minutos y zona. El atleta lo ve con 🏃 y lo marca como «Hecho».
 - Excel: Grupo = Aeróbico; en F1–F4 Series van los minutos y en F1–F4 Reps la zona; columnas Máquina e Inclinación.
+
+## Aviso de privacidad (LFPDPPP 2025)
+
+- Aviso integral público: `aviso-de-privacidad/index.html` → atletas.headcoachleonardopablo.com/aviso-de-privacidad/ (fuente única; la app lo carga dentro de la ventana).
+- Cada cliente (nuevo o actual) ve la ventana al entrar hasta aceptar la versión vigente (`PRIVACY.version` en index.html). Aceptar exige la casilla de consentimiento expreso para datos sensibles (art. 8); finalidades secundarias opcionales. Cancelar bloquea el acceso y permite salir.
+- La aceptación se guarda en `pt_evo` (kind `privacy`, versión, fecha, secundarias, navegador). El coach ve el estado en la ficha del cliente.
+- Para publicar una nueva versión: edita la página del aviso, sube `PRIVACY.version` y su fecha; todos los clientes lo volverán a aceptar.
