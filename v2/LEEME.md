@@ -36,10 +36,11 @@ Nueva versión del portal. Desde el 28/10/2026 vive en la raíz `https://atletas
 - No usa Supabase: todo vive en el navegador del visitante (localStorage). Arranca en limpio, sin clientes; solo trae la biblioteca de ejercicios y 3 plantillas base sin nombres de atletas. Cada visitante tiene su propia copia; «Reiniciar demo» la borra.
 - Funciona igual que la app real: crear clientes (genera correo y contraseña de demo), planes, tareas, Excel, vista del atleta.
 
-## Eliminar perfil (lo hace la clienta / cliente)
+## Eliminar perfil (lo hace la clienta / cliente o el coach)
 
 - En **Mi perfil**, al final, hay un enlace pequeño «Eliminar mi perfil» con dos confirmaciones (casilla + escribir ELIMINAR).
-- Requiere correr una vez `eliminar-cuenta.sql` en Supabase → SQL Editor. Crea la función `delete_my_account()` y el permiso para que cada quien borre sus archivos del bucket `evidencias`.
+- El coach también puede eliminar a un cliente: Perfil del cliente → «🗑️ Eliminar cliente», con los mismos pasos. Además borra el plan personal del cliente en las plantillas.
+- Requiere correr una vez `eliminar-cuenta.sql` en Supabase → SQL Editor. Crea las funciones `delete_my_account()` y `coach_delete_client(correo)` y el permiso para que cada quien borre sus archivos del bucket `evidencias`.
 - Borra: tareas, cargas, medidas, foto, ciclo, alimentación, mensajes, actividad, avisos, ficha, plan, sesiones, comentarios, evidencias (filas y archivos), perfil y el usuario de acceso. El coach no puede borrarse por esta vía.
 - Después la persona puede registrarse otra vez con el mismo correo y empieza en blanco.
 

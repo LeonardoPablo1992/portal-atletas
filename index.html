@@ -748,6 +748,10 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .aero-ic{font-size:16px}
 .btn.aero-add{background:#e0f2fe;color:#0369a1;border-color:#bae6fd}
 details.aero-v summary .n{background:#e0f2fe}
+.del-link{border:0;background:transparent;color:#c2410c;font-size:12.5px;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:999px}
+.del-link:hover{background:#fff7ed}
+.del-modal .modal-b{padding:16px}
+.del-modal{background:#fffaf5}
 </style>
 </head>
 <body>
@@ -1202,6 +1206,9 @@ function demoClient(){
     async rpc(n){if(n==='delete_my_account'){if(!user||isC())return {data:null,error:{message:'coach_cannot_delete'}};const em=user.email;
         ['pt_tasks','pt_acts','pt_evo','pt_messages','pt_activity','pt_notifs','plans','sessions','comments','evidence'].forEach(t=>{if(db[t])db[t]=db[t].filter(r=>String(r.athlete_email||'').toLowerCase()!==em)});
         db.pt_athletes=(db.pt_athletes||[]).filter(r=>r.id!==em);db.profiles=(db.profiles||[]).filter(r=>r.email!==em);delete db.auth[em];demoPersist();return {data:{ok:true},error:null}}
+      if(n==='coach_delete_client'){if(!isC())return {data:null,error:{message:'not_coach'}};const em=String((arguments[1]||{}).target_email||'').toLowerCase();if(!em||em===DEMO.COACH)return {data:null,error:{message:'invalid_target'}};
+        ['pt_tasks','pt_acts','pt_evo','pt_messages','pt_activity','pt_notifs','plans','sessions','comments','evidence'].forEach(t=>{if(db[t])db[t]=db[t].filter(r=>String(r.athlete_email||'').toLowerCase()!==em)});
+        db.pt_athletes=(db.pt_athletes||[]).filter(r=>r.id!==em);db.pt_templates=(db.pt_templates||[]).filter(r=>String((r.doc||{}).athleteId||'').toLowerCase()!==em);db.profiles=(db.profiles||[]).filter(r=>r.email!==em);delete db.auth[em];demoPersist();return {data:{ok:true},error:null}}
       return {data:n==='is_coach'?isC():null,error:null}},
     from:Q};
 }
@@ -1524,7 +1531,7 @@ function openNewAthlete(id){
     <div class="row" style="flex-wrap:wrap"><div class="field" style="min-width:180px"><label>Objetivo</label><select id="na_g">${['Hipertrofia','Definición','Fuerza','Recomposición corporal','Rendimiento deportivo','Salud general'].map(g=>`<option ${a.goal===g?'selected':''}>${g}</option>`).join('')}</select></div>
     ${id?'':`<div class="field" style="min-width:180px"><label>Plan inicial</label><select id="na_p"><option value="">Asignar después</option>${S.plans.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>`}</div>
   </div>
-  <div class="modal-f"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveAthlete('${id||''}')">${id?'Guardar cambios':'Crear cliente'}</button></div></div>`);
+  <div class="modal-f">${id?`<button type="button" class="del-link" onclick="openDeleteClient('${id}')">🗑️ Eliminar cliente</button>`:''}<span style="flex:1"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveAthlete('${id||''}')">${id?'Guardar cambios':'Crear cliente'}</button></div></div>`);
   naZones();naComp();
 }
 function naGender(){const el=document.getElementById('na_cyc'),id=S.ui.cycA;if(!el)return;const a=S.athletes.find(x=>x.id===id);
@@ -1632,6 +1639,51 @@ async function runDeleteAccount(){
     toast(/delete_my_account|function|schema cache/i.test(m)?'Esta opción aún no está activada. Pídele a tu coach que la active.':/coach/.test(m)?'La cuenta del coach no se puede eliminar desde aquí.':'No se pudo eliminar tu perfil. Intenta de nuevo.');
   }
 }
+
+/* ---- El coach elimina a un cliente (mismos pasos que la clienta) ---- */
+const CDEL={aid:null,step:0,busy:false,st:{}};
+function openDeleteClient(aid){CDEL.aid=aid;CDEL.step=1;CDEL.st={};CDEL.busy=false;renderDelClient()}
+function renderDelClient(){
+  const a=S.athletes.find(x=>x.id===CDEL.aid)||{name:CDEL.name||'',id:CDEL.aid},fn=esc((a.name||a.id).split(' ')[0]),s=CDEL.step;let body='';
+  if(s===1)body=`<div class="del-box" style="margin:0" role="alertdialog"><div class="del-h"><span class="del-e">⚠️</span><div><b class="tt">¿Seguro que quieres eliminar a ${fn}?</b><div>Su cuenta se borrará <b>para siempre</b>. No se puede deshacer y nadie la podrá recuperar.</div></div></div>
+    <div class="del-list"><span>🏋️ Entrenamientos y calendario</span><span>📊 Estadísticas y registros de carga</span><span>🍽️ Alimentación y registros</span><span>📏 Peso y medidas</span><span>💧 Datos de su ciclo</span><span>📸 Foto de perfil y evidencias</span><span>💬 Mensajes contigo</span><span>📋 Su plan personal</span><span>🔑 Su acceso al portal</span></div>
+    <div class="del-note">👋 ${fn} podrá crear un perfil nuevo con su correo cuando quiera, pero empezará en blanco. Tus plantillas y tu biblioteca no se tocan.</div>
+    <div class="del-f"><button type="button" class="btn ghost sm" onclick="closeModal();openNewAthlete('${a.id}')">Mejor no</button><button type="button" class="btn del-btn sm" onclick="CDEL.step=2;renderDelClient()">Continuar</button></div></div>`;
+  else if(s===2)body=`<div class="del-box" style="margin:0"><div class="del-h"><span class="del-e">🔒</span><div><b class="tt">Último paso</b><div>Para confirmar, marca la casilla y escribe <b>ELIMINAR</b>.</div></div></div>
+    <label class="del-chk"><input type="checkbox" id="cdel_ok" onchange="cdelCheck()"> Entiendo que la cuenta de ${fn} y todo su historial se borrarán para siempre</label>
+    <input id="cdel_txt" class="del-in" autocomplete="off" autocapitalize="characters" placeholder="Escribe ELIMINAR" oninput="cdelCheck()">
+    <div class="del-f"><button type="button" class="btn ghost sm" onclick="closeModal();openNewAthlete('${a.id}')">Cancelar</button><button type="button" class="btn del-btn sm" id="cdel_go" disabled onclick="runDeleteClient()">🗑️ Eliminar para siempre</button></div></div>`;
+  else if(s===3)body=`<div class="del-box" style="margin:0"><div class="del-h"><span class="del-e spin">🧹</span><div><b class="tt">Eliminando a ${fn}…</b><div>No cierres esta ventana.</div></div></div><div class="del-steps" id="cdelSteps">${cdelStepsHTML()}</div></div>`;
+  else body=`<div class="del-done" style="margin:0;box-shadow:none"><div class="del-big">👋</div><h2>${fn} fue ${CDEL.g==='Mujer'?'eliminada':CDEL.g==='Hombre'?'eliminado':'eliminado(a)'}</h2><p>Borramos para siempre su perfil, su historial, sus fotos y sus archivos. 🧹✨</p><p class="muted">Si algún día regresa, puede crear un perfil nuevo con su correo y empezar en blanco. 💪</p><div style="margin-top:14px"><button class="btn del-btn" onclick="closeModal()">Listo</button></div></div>`;
+  openModal(`<div class="modal sm del-modal">${s===3||s===4?'':`<div class="modal-h"><h3>🗑️ Eliminar cliente</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div>`}<div class="modal-b">${body}</div></div>`);
+}
+const CDEL_STEPS=[['files','📸','Borrando sus fotos y archivos'],['data','🗂️','Borrando su historial'],['acct','🔐','Eliminando su cuenta']];
+function cdelStepsHTML(){return CDEL_STEPS.map(([k,e,t])=>{const st=CDEL.st[k]||'wait';return `<div class="ds ${st}"><span>${st==='ok'?'✅':st==='run'?e:'⏳'}</span>${t}${st==='run'?'…':''}</div>`}).join('')}
+function cdelPaint(){const el=document.getElementById('cdelSteps');if(el)el.innerHTML=cdelStepsHTML()}
+function cdelCheck(){const ok=document.getElementById('cdel_ok')?.checked&&String(document.getElementById('cdel_txt')?.value||'').trim().toUpperCase()==='ELIMINAR';const b=document.getElementById('cdel_go');if(b)b.disabled=!ok}
+async function runDeleteClient(){
+  if(!IS_COACH||CDEL.busy)return;const aid=CDEL.aid,a=S.athletes.find(x=>x.id===aid);if(!a||aid===ME.email)return;
+  CDEL.name=a.name;CDEL.g=genderOf(a);CDEL.busy=true;DEL.busy=true;CDEL.step=3;CDEL.st={files:'run'};clearTimeout(flushT);
+  if(dirty){DEL.busy=false;try{await flush()}catch(e){}DEL.busy=true}
+  renderDelClient();const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  try{
+    try{if(SB.storage){const {data}=await SB.from('evidence').select('path').eq('athlete_email',aid);const paths=(data||[]).map(x=>x.path).filter(Boolean);
+      for(let i=0;i<paths.length;i+=100)await SB.storage.from('evidencias').remove(paths.slice(i,i+100))}}catch(e){console.warn('archivos',e)}
+    CDEL.st={files:'ok',data:'run'};cdelPaint();await wait(500);
+    const {error}=await SB.rpc('coach_delete_client',{target_email:aid});if(error)throw error;
+    CDEL.st={files:'ok',data:'ok',acct:'run'};cdelPaint();await wait(500);
+    ['tasks','acts','evo','messages','activity','notifs'].forEach(k=>{S[k]=S[k].filter(x=>x.athleteId!==aid)});
+    S.plans=S.plans.filter(p=>p.athleteId!==aid);S.athletes=S.athletes.filter(x=>x.id!==aid);delete OLDPLANS[aid];
+    snapshot();dirty=false;
+    if(S.ui.athleteId===aid)S.ui.athleteId=S.athletes[0]?S.athletes[0].id:null;
+    CDEL.st={files:'ok',data:'ok',acct:'ok'};cdelPaint();await wait(600);
+    CDEL.busy=false;DEL.busy=false;save();renderApp();CDEL.step=4;renderDelClient();
+  }catch(e){
+    console.error(e);CDEL.busy=false;DEL.busy=false;CDEL.step=1;const m=String(e.message||e);closeModal();
+    toast(/coach_delete_client|function|schema cache/i.test(m)?'Falta activar la función en Supabase: corre eliminar-cuenta.sql':/not_coach/.test(m)?'Solo el coach puede eliminar clientes':'No se pudo eliminar al cliente. Intenta de nuevo.');
+  }
+}
+
 function delDoneScreen(){
   document.getElementById('whoAmI').textContent='';const lo=document.getElementById('btnLogout');if(lo)lo.style.display='none';
   const again=DEMO.on?`<button class="btn del-btn" onclick="location.reload()">Volver al inicio</button>`:`<a class="btn del-btn" href="/anterior/#crear-cuenta">✨ Crear un perfil nuevo</a>`;
