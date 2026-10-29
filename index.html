@@ -687,6 +687,12 @@ label.chk input{width:18px;height:18px;accent-color:var(--green)}
 .gq .cdrop{color:#ec4899}
 .per-coach{margin-top:12px;max-width:620px}
 .per-coach .per{margin-bottom:0}
+.gro{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 14px;font-weight:700;font-size:13px;color:var(--ink-2)}
+.per-more{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:12.5px;color:#9d174d;font-weight:600}
+.per-date{display:inline-flex;align-items:center;gap:8px}
+.per-date input{border:1.5px solid #f9a8d4;border-radius:10px;padding:5px 8px;background:#fff;color:#831843;font:inherit}
+.per-irr{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.per-irr input{width:17px;height:17px;accent-color:#ec4899}
 </style>
 </head>
 <body>
@@ -1471,40 +1477,46 @@ function lastWeight(aid){const e=S.evo.filter(x=>x.athleteId===aid&&x.peso!=null
 const FEM_N=new Set('ana andrea adriana alejandra alicia alondra amanda amparo angela angelica anahi araceli ariadna arleth aurora azucena beatriz belen berenice blanca brenda carla carmen carolina catalina cecilia celia citlali claudia cristina daniela dayana denisse diana dulce elena elisa elizabeth elsa emilia esmeralda estefania esther eva fabiola fatima fernanda flor frida gabriela georgina gloria graciela guadalupe hilda irene iris isabel itzel ivonne jacqueline janet jazmin jessica jimena josefina juana julia karen karina karla kasandra kassandra katia laura leticia liliana linda lizbeth lizeth lorena lourdes lucia luisa luz magdalena maite marcela margarita maria mariana maribel maricela marisol marlene marta martha masiel melissa mercedes michelle miriam monica montserrat nadia nancy natalia nayeli nelly noemi norma olga paola patricia paula paulina perla pilar priscila raquel rebeca regina rocio rosa rosario ruth sandra sara sarahi silvia sofia sonia susana tania teresa valentina valeria vanessa veronica victoria viridiana ximena yadira yesenia yolanda zaira'.split(' '));
 const MAS_N=new Set('aaron abraham adan adolfo adrian agustin alan alberto alejandro alfonso alfredo andres angel antonio armando arturo benjamin bernardo bruno carlos cesar christian cristian daniel david diego eduardo efrain emilio emiliano enrique erick ernesto esteban eugenio federico felipe fernando francisco gabriel gerardo gilberto gonzalo guillermo gustavo hector hugo ignacio isaac ismael ivan jaime javier jesus joaquin jorge jose josue juan julio leonardo leonel luis manuel marco marcos mario martin mateo mauricio miguel moises nicolas oscar pablo pedro rafael ramon raul ricardo roberto rodrigo rogelio ruben salvador samuel santiago sebastian sergio tomas ulises uriel victor vicente'.split(' '));
 function guessGender(name){const f=String(name||'').trim().split(/\s+/)[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(!f)return '';return FEM_N.has(f)?'Mujer':MAS_N.has(f)?'Hombre':''}
-function genderOf(a){if(!a)return '';const p=S.evo.filter(e=>e.kind==='prof'&&e.athleteId===a.id&&e.gender).sort((x,y)=>y.ts-x.ts)[0];return p&&(!a.genderTs||p.ts>a.genderTs)?p.gender:(a.gender||guessGender(a.name))}
+function genderOf(a){if(!a)return '';return a.gender||guessGender(a.name)} /* el género solo lo define el coach */
 /* Ciclo menstrual (solo mujeres): último registro tipo 'cycle' en pt_evo; lo pueden editar atleta y coach */
 const cycleOf=aid=>S.evo.filter(e=>e.kind==='cycle'&&e.athleteId===aid).sort((x,y)=>y.ts-x.ts)[0]||null;
 function cyclePhase(c,ds){
-  if(!c||!c.tracking||!c.last)return null;const L=+c.len||28,diff=Math.round((parse(ds||TODAY)-parse(c.last))/864e5);if(diff<0)return null;const P=(c.endFor===c.last&&c.endDay!=null&&diff<L)?+c.endDay:(+c.plen||5);
+  if(!c||!c.tracking||!c.last)return null;const L=+c.len||28,diff=Math.round((parse(ds||TODAY)-parse(c.last))/864e5);if(diff<0)return null;const irr=!!c.irregular,P=(c.endFor===c.last&&c.endDay!=null&&(irr||diff<L))?+c.endDay:(+c.plen||5);
+  if(irr){const day=diff+1,ov=L-14,ph=day<=P?'Menstrual':day<ov-1?'Folicular':day<=ov+1?'Ovulatoria':'Lútea';return {day,len:L,phase:ph,next:null,irregular:true,menstrual:ph==='Menstrual'}}
   const day=diff%L+1,ov=L-14,ph=day<=P?'Menstrual':day<ov-1?'Folicular':day<=ov+1?'Ovulatoria':'Lútea',next=addDays(c.last,(Math.floor(diff/L)+1)*L);
   return {day,len:L,phase:ph,next,menstrual:ph==='Menstrual'};
 }
 const PH_TIP={Menstrual:'Días de sangrado. Es normal tener menos energía; se puede bajar un poco la intensidad si hace falta.',Folicular:'La energía suele subir. Buen momento para entrenamientos más pesados.',Ovulatoria:'Fuerza y energía altas. Cuida la técnica: hay un poco más de laxitud en articulaciones.',Lútea:'Puede haber más cansancio, hinchazón o antojos. La sensación de esfuerzo suele ser mayor.'};
 const dropSVG=(s=18,cls='')=>`<svg class="cdrop ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-.35 0-.66.18-.85.47C9.5 5.6 5 11.4 5 15.2A7 7 0 0 0 19 15.2c0-3.8-4.5-9.6-6.15-12.13A1 1 0 0 0 12 2.6z" fill="currentColor"/><ellipse cx="9.2" cy="14.6" rx="1.35" ry="2.5" fill="#fff" opacity=".75" transform="rotate(-18 9.2 14.6)"/><circle cx="10.4" cy="10.9" r=".8" fill="#fff" opacity=".6"/></svg>`;
 function periodDayHTML(a,role){
-  const nw=a.id==='__new',c=nw?null:cycleOf(a.id),p=cyclePhase(c),cur=nw?(S.ui.newCyc||0):p&&p.menstrual?p.day:0,me=role==='athlete';
-  return `<div class="per"><div class="per-h"><span class="per-ico">${dropSVG(22)}</span><div style="flex:1;min-width:160px"><b>${me?'¿En qué día de tu periodo estás?':'¿En qué día de su periodo está?'}</b>${qm('periodo_dia')}<div class="per-s">${cur?`Hoy: <b>día ${cur}</b> de ${me?'tu':'su'} periodo`:me?'Toca el día en el que vas. Si no estás en tu periodo, déjalo así.':nw?'Opcional: marca el día si hoy está en su periodo.':'Sin periodo registrado hoy.'}</div></div></div>
-    <div class="per-days">${[1,2,3,4,5].map(n=>`<button type="button" class="pday ${cur===n?'on':''}" aria-pressed="${cur===n}" onclick="cycDay('${a.id}','${role}',${n})">${dropSVG(15)}<span>Día ${n}</span></button>`).join('')}${cur?`<button type="button" class="pday end" onclick="cycDay('${a.id}','${role}',0)">Ya terminó</button>`:''}</div></div>`;
+  const nw=a.id==='__new',c=nw?null:cycleOf(a.id),p=cyclePhase(c),cur=nw?(S.ui.newCyc||0):p&&p.menstrual?p.day:0,me=role==='athlete'||role==='finish',fin=role==='finish';
+  return `<div class="per"><div class="per-h"><span class="per-ico">${dropSVG(22)}</span><div style="flex:1;min-width:160px"><b>${me?'¿En qué día de tu periodo estás?':'¿En qué día de su periodo está?'}</b>${qm('periodo_dia')}<div class="per-s">${cur?`Hoy: <b>día ${cur}</b> de ${me?'tu':'su'} periodo`:fin?'Si hoy estás en tu periodo, toca el día en el que vas.':me?'Toca el día en el que vas. Si no estás en tu periodo, déjalo así.':nw?'Opcional: marca el día si hoy está en su periodo.':'Sin periodo registrado hoy.'}${!cur&&c&&c.tracking&&c.last?`<br>Último inicio: <b>${dmy(c.last)}</b>`:''}</div></div></div>
+    <div class="per-days">${[1,2,3,4,5].map(n=>`<button type="button" class="pday ${cur===n?'on':''}" aria-pressed="${cur===n}" onclick="cycDay('${a.id}','${role}',${n})">${dropSVG(15)}<span>Día ${n}</span></button>`).join('')}${cur?`<button type="button" class="pday end" onclick="cycDay('${a.id}','${role}',0)">Ya terminó</button>`:''}</div>
+    ${nw?'':`<div class="per-more"><label class="per-date">${me?'¿Empezó otro día?':'Empezó otro día'} <input type="date" max="${TODAY}" min="${addDays(TODAY,-90)}" value="" onchange="cycStart('${a.id}','${role}',this.value)"></label>${fin?'':`<label class="per-irr"><input type="checkbox" ${c&&c.irregular?'checked':''} onchange="cycIrr('${a.id}','${role}',this.checked)"> ${me?'Mi ciclo es irregular':'Ciclo irregular'} ${qm('irregular')}</label>`}</div>`}</div>`;
 }
+function cycStart(aid,role,ds){if(!ds||ds>TODAY)return;const n=Math.round((parse(TODAY)-parse(ds))/864e5)+1;const c=cycleOf(aid)||{};S.ui.cycA=aid;
+  cycWrite(aid,{tracking:true,last:ds,plen:Math.max(+c.plen||5,Math.min(n,7)),endDay:null,endFor:null});
+  if(role!=='coach')pushActivity(aid,'ready',`registró que su periodo empezó el ${dmy(ds)}`);toast(`Inicio del periodo: ${dmy(ds)}`);cycRerender(role)}
+function cycIrr(aid,role,on){S.ui.cycA=aid;cycWrite(aid,{irregular:!!on});toast(on?'Ciclo irregular: la menstruación se cuenta solo cuando se marca':'Ciclo regular');cycRerender(role)}
 function cycDay(aid,role,n){
   if(aid==='__new'){S.ui.newCyc=n;const el=document.getElementById('na_cyc');if(el)el.innerHTML=periodDayHTML({id:'__new',name:''},'coach');return}
   S.ui.cycA=aid;const c=cycleOf(aid),p=cyclePhase(c),a=S.athletes.find(x=>x.id===aid),first=(a.name||'').split(' ')[0];
   if(n>0){const prev=c||{};cycWrite(aid,{tracking:true,last:addDays(TODAY,-(n-1)),plen:Math.max(+prev.plen||5,n),endDay:null,endFor:null});
-    if(role==='athlete')pushActivity(aid,'ready',`registró que va en el día ${n} de su periodo`);toast(role==='athlete'?`Listo: día ${n} de tu periodo 💧`:`${first}: día ${n} de su periodo`)}
-  else{if(!p||!p.menstrual)return;cycWrite(aid,{endDay:p.day-1,endFor:c.last});if(role==='athlete')pushActivity(aid,'ready','registró que terminó su periodo');toast('Listo, periodo terminado')}
+    if(role!=='coach')pushActivity(aid,'ready',`registró que va en el día ${n} de su periodo`);toast(role!=='coach'?`Listo: día ${n} de tu periodo 💧`:`${first}: día ${n} de su periodo`)}
+  else{if(!p||!p.menstrual)return;cycWrite(aid,{endDay:p.day-1,endFor:c.last});if(role!=='coach')pushActivity(aid,'ready','registró que terminó su periodo');toast('Listo, periodo terminado')}
   cycRerender(role);
 }
 function cycleHTML(a,role){
   if(genderOf(a)!=='Mujer')return '';const c=cycleOf(a.id),on=!!(c&&c.tracking),p=cyclePhase(c),pre=role==='coach'?'nc':'ac';
-  return `${periodDayHTML(a,role)}<div class="cyc ${on?'on':''}"><div class="ch"><span class="ico">${ic('drop',17,on)}</span><div style="flex:1;min-width:150px"><b>Fase menstrual</b>${qm('ciclo')}<div class="muted" style="font-size:12px">${on?(p?`Día ${p.day} de ${p.len} · <b>${p.phase}</b> · próxima menstruación aprox. ${dmy(p.next).slice(0,5)}`:'Registrado · agrega la fecha de inicio de la última menstruación'):'Incluir este dato ayuda a ajustar la intensidad del entrenamiento'}</div></div>
+  return `${periodDayHTML(a,role)}<div class="cyc ${on?'on':''}"><div class="ch"><span class="ico">${ic('drop',17,on)}</span><div style="flex:1;min-width:150px"><b>Fase menstrual</b>${qm('ciclo')}<div class="muted" style="font-size:12px">${on?(p?`Día ${p.day} de ${p.len} · <b>${p.phase}</b> · ${p.next?`próxima menstruación aprox. ${dmy(p.next).slice(0,5)}`:'ciclo irregular: se marca al empezar'}`:'Registrado · agrega la fecha de inicio de la última menstruación'):'Incluir este dato ayuda a ajustar la intensidad del entrenamiento'}</div></div>
     <button type="button" class="btn ${on?'ghost':'soft'} sm" onclick="cycToggle('${a.id}','${role}')">${on?'Quitar dato':'Incluir fase menstrual'}</button></div>
     ${on?`<div class="row" style="flex-wrap:wrap;margin-top:10px;align-items:end"><div class="field" style="min-width:150px;margin:0"><label>Inicio de la última menstruación</label><input type="date" id="${pre}_last" max="${TODAY}" value="${esc(c.last||'')}"></div><div class="field" style="min-width:110px;margin:0"><label>Duración del ciclo (días)</label><input type="number" id="${pre}_len" min="20" max="45" value="${esc(c.len||28)}"></div><div class="field" style="min-width:110px;margin:0"><label>Días de sangrado</label><input type="number" id="${pre}_plen" min="2" max="10" value="${esc(c.plen||5)}"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn soft sm" onclick="cycSave('${a.id}','${role}',true)">${ic('drop',12,true)} Hoy empezó</button><button type="button" class="btn primary sm" onclick="cycSave('${a.id}','${role}')">Guardar</button></div></div>
       ${p?`<div class="ph"><span class="phase-pill">${ic('drop',11,true)} Fase ${p.phase}</span> ${PH_TIP[p.phase]}</div>`:''}`:''}
   </div>`;
 }
-function cycWrite(aid,data){const prev=cycleOf(aid)||{};S.evo.push({id:uid(),athleteId:aid,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:prev.last||'',len:prev.len||28,plen:prev.plen||5,...(prev.endFor&&prev.endFor===(data.last||prev.last)?{endDay:prev.endDay,endFor:prev.endFor}:{}),...data})}
-function cycRerender(role){const el=document.getElementById('na_cyc');if(role==='coach'&&el){el.innerHTML=cycleHTML(S.athletes.find(x=>x.id===S.ui.cycA),'coach');save();renderApp()}else commit()}
+function cycWrite(aid,data){const prev=cycleOf(aid)||{};S.evo.push({id:uid(),athleteId:aid,date:TODAY,kind:'cycle',ts:Date.now(),tracking:true,last:prev.last||'',len:prev.len||28,plen:prev.plen||5,irregular:!!prev.irregular,...(prev.endFor&&prev.endFor===(data.last||prev.last)?{endDay:prev.endDay,endFor:prev.endFor}:{}),...data})}
+function cycRerender(role){if(role==='finish'){reAthModal(S.ui.finTask);return}const el=document.getElementById('na_cyc');if(role==='coach'&&el){el.innerHTML=cycleHTML(S.athletes.find(x=>x.id===S.ui.cycA),'coach');save();renderApp()}else commit()}
 function cycToggle(aid,role){S.ui.cycA=aid;const c=cycleOf(aid);cycWrite(aid,{tracking:!(c&&c.tracking)});if(role==='athlete')pushActivity(aid,'ready',c&&c.tracking?'quitó el dato de fase menstrual':'empezó a registrar su fase menstrual');cycRerender(role)}
 function cycSave(aid,role,today){S.ui.cycA=aid;const pre=role==='coach'?'nc':'ac';const last=today?TODAY:gv(pre+'_last'),len=+gv(pre+'_len')||28,plen=+gv(pre+'_plen')||5;
   if(!last){toast('Pon la fecha de inicio de la última menstruación');return}if(len<20||len>45){toast('La duración del ciclo suele estar entre 20 y 45 días');return}
@@ -1517,7 +1529,7 @@ function profilePageHTML(a){
   return `<div class="card" style="padding:14px;margin-bottom:12px">
     <div class="pf-head" style="display:block">${avatarUploader(a,'athlete')}</div><div class="pf-head"><div style="min-width:0"><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.email||'')}</div>${a.goal?`<span class="pill done" style="margin-top:4px">${ic('target',11)} ${esc(a.goal)}</span>`:''}</div></div>
   </div>
-  <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b>Mis datos</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>
+  <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b>Mis datos</b><span class="muted" style="font-size:12px;flex:1">Género</span><span class="gro" title="Solo tu coach puede cambiarlo">${esc(g||'Sin indicar')}</span></div>
     ${cycleHTML(a,'athlete')}
     <div class="pf-grid">
       <div class="c"><div class="l">Edad</div>${v(a.age,a.age?'años':'')}</div>
@@ -1555,8 +1567,6 @@ async function uploadAvatar(aid,file,role){
   commit();toast('Foto de perfil actualizada');
 }
 function removeAvatar(aid,role){const e=S.evo.find(x=>x.id==='avatar-'+aid);if(e){e.img='';e.ts=Date.now()}if(role==='coach'&&document.getElementById('na_av'))document.getElementById('na_av').innerHTML=avatarUploader(S.athletes.find(x=>x.id===aid),'coach');commit()}
-function myProfileHTML(a){const g=genderOf(a);return `<div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${g==='Mujer'?10:0}px"><b>Mi perfil</b><span class="muted" style="font-size:12px;flex:1">Género</span><div class="gseg">${['Mujer','Hombre'].map(x=>`<button class="${g===x?'on':''}" onclick="setMyGender('${x}')">${x}</button>`).join('')}</div></div>${cycleHTML(a,'athlete')}</div>`}
-function setMyGender(g){const a=curA();if(genderOf(a)===g)return;S.evo.push({id:uid(),athleteId:a.id,date:TODAY,kind:'prof',gender:g,ts:Date.now()});pushActivity(a.id,'ready',`actualizó su género: ${g}`);commit()}
 const ACT=[[1.2,'Sedentario'],[1.375,'Ligero (1–3 días/sem)'],[1.55,'Moderado (3–5 días/sem)'],[1.725,'Intenso (6–7 días/sem)'],[1.9,'Muy intenso / doble sesión']];
 function lastEvoOf(aid,k){const e=S.evo.filter(x=>x.athleteId===aid&&x[k]!=null&&x[k]!=='').sort((x,y)=>y.date.localeCompare(x.date))[0];return e?+e[k]:null}
 function bodyComp(a,wo){
@@ -1869,6 +1879,7 @@ function finishHTML(t){
    ${zoneBtnsField()}
    ${hrAvgField()}
    ${zonesField()}
+   ${genderOf(S.athletes.find(x=>x.id===t.athleteId))==='Mujer'?`<div class="field">${periodDayHTML(S.athletes.find(x=>x.id===t.athleteId),'finish')}</div>`:''}
    <div class="field"><label>¿Cómo te sentiste?</label><span class="stars" id="rateStars">${starsInter()}</span></div>
    <div class="field"><label>Comentario para tu coach</label><textarea id="fin_c" placeholder="Opcional" oninput="S.ui.finC=this.value">${esc(S.ui.finC||'')}</textarea></div>
    <button class="btn primary full" onclick="finishTraining('${t.id}')">${ic('check',15)} Marcar como completado</button></div>`;
@@ -2034,9 +2045,10 @@ function finishTraining(tid){
   if(p===0&&!confirm('No marcaste ninguna serie. ¿Finalizar de todos modos?'))return;
   const rpe=S.ui.effort??7,zones=[...document.querySelectorAll('.fin_z')].map(i=>+i.value||0);
   const dur=`${min} min`;
-  t.status='done';t.feedback={effort:rpe,durMin:min,zones:trimpOf(zones)?zones:null,hrAvg:+gv('fin_hr')||null,zoneMain:S.ui.finZn||null,rating:S.ui.rate||0,comment:gv('fin_c'),duration:dur,completedAt:Date.now()};
+  const cpF=genderOf(S.athletes.find(x=>x.id===t.athleteId))==='Mujer'?cyclePhase(cycleOf(t.athleteId)):null;
+  t.status='done';t.feedback={period:cpF&&cpF.menstrual?cpF.day:null,effort:rpe,durMin:min,zones:trimpOf(zones)?zones:null,hrAvg:+gv('fin_hr')||null,zoneMain:S.ui.finZn||null,rating:S.ui.rate||0,comment:gv('fin_c'),duration:dur,completedAt:Date.now()};
   S.ui.timer=null;S.ui.rate=0;S.ui.effort=7;S.ui.finMin=null;S.ui.finZ=null;S.ui.finC='';S.ui.finHr='';
-  pushActivity(t.athleteId,'done',`completó «${t.title}» (${p}%) · carga ${fmtN(min*rpe)} UA`);
+  pushActivity(t.athleteId,'done',`completó «${t.title}» (${p}%) · carga ${fmtN(min*rpe)} UA${cpF&&cpF.menstrual?` · día ${cpF.day} de periodo`:''}`);
   closeModal();commit();toast(`¡Entrenamiento completado! Carga de la sesión: ${fmtN(min*rpe)} UA`);
 }
 function markDone(tid,txt){const t=taskById(tid);t.status='done';pushActivity(t.athleteId,'done',txt);closeModal();commit();toast('Listo, tu coach fue notificado')}
@@ -2656,6 +2668,7 @@ const HELP={
   actividad:{t:'Otra actividad',b:'Si hiciste algo fuera de tu plan (correr, bici, un partido), regístralo para que también cuente en tu carga de la semana.'},
   peso:{t:'Peso corporal',b:'Pésate en ayunas, a la misma hora y en la misma báscula para que tus datos se puedan comparar.'},
   periodo_dia:{t:'Día de tu periodo',b:'Toca el día de tu periodo en el que vas (día 1 = el primer día de sangrado). Con eso calculamos tu fase y tu coach puede ajustar la intensidad, por ejemplo bajar un poco el peso los primeros días si lo necesitas. Cuando termine, toca «Ya terminó». Solo lo ven tú y tu coach.'},
+  irregular:{t:'Ciclo irregular',b:'Actívalo si tu periodo no llega cada mes en la misma fecha. Así la app no adivina cuándo te toca: solo cuenta tu periodo cuando tú lo marcas, el día que empiece.'},
   ciclo:{t:'Fase menstrual',b:'Es opcional. Si lo incluyes, con la fecha en que empezó tu última menstruación y cuántos días dura tu ciclo calculamos en qué fase estás. Tu energía y fuerza cambian según la fase, y tu coach lo usa para ajustar la intensidad. Solo lo ven tú y tu coach.'},
   comp:{t:'Tu composición',b:'Tu peso, cuánto de tu cuerpo es grasa y cuánta energía gastas al día. IMC compara tu peso con tu estatura. IMM muestra cuánto músculo tienes para tu estatura. GEB es lo que tu cuerpo gasta en reposo y GET es todo lo que gastas en un día normal, contando tu actividad.'},
   imm:{t:'IMM · índice de masa muscular',b:'Muestra cuánto músculo tienes en relación con tu estatura (kilos de músculo ÷ estatura²). Si no hay medición de masa muscular, se usa la masa libre de grasa. Subirlo con el tiempo significa que ganas músculo.'},
