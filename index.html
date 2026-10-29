@@ -828,6 +828,7 @@ details.lgrp[open] .chev{transform:rotate(180deg)}
 .tchip.aero-t:hover{background:#e0f2fe;border-color:#0284c7}
 .mq-w{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
 .mq-o{border:1px solid #bae6fd;border-radius:10px;padding:7px 10px;font-size:13px;min-width:160px;background:#fff}
+.meas-card{margin-bottom:12px;padding:14px}
 .meas-card .meas-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .meas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
 .mg{border:1px solid var(--line);border-radius:14px;padding:9px 11px;background:#fff;border-left:4px solid #e5e7eb}
@@ -2071,6 +2072,7 @@ function profilePageHTML(a){
   return `<div class="card" style="padding:14px;margin-bottom:12px">
     <div class="pf-head" style="display:block">${avatarUploader(a,'athlete')}</div><div class="pf-head"><div style="min-width:0"><b style="font-size:16px">${esc(a.name)}</b><div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.email||'')}</div>${a.goal?`<span class="pill done" style="margin-top:4px">${ic('target',11)} ${esc(a.goal)}</span>`:''}</div></div>
   </div>
+  ${measCardHTML(a,'athlete')}
   <div class="card" style="padding:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><b>Mis datos</b><span class="muted" style="font-size:12px;flex:1">Género</span><span class="gro" title="Solo tu coach puede cambiarlo">${esc(g||'Sin indicar')}</span></div>
     ${cycleHTML(a,'athlete')}
     <div class="pf-grid">
@@ -2691,7 +2693,10 @@ const MEAS=[
 const MEAS_DAYS=92;
 const measVal=(e,k)=>{let v=e[k];if((v==null||v==='')&&k==='gluteo')v=e.cadera;return v==null||v===''||isNaN(+v)?null:+v};
 function measRows(aid,from){return S.evo.filter(e=>e.athleteId===aid&&!e.kind&&(!from||e.date>=from)&&MEAS.some(m=>measVal(e,m.k)!=null)).sort((a,b)=>a.date.localeCompare(b.date)||(a.ts||0)-(b.ts||0))}
-function measSeries(aid,k,from){const m=new Map();measRows(aid,from).forEach(e=>{const v=measVal(e,k);if(v!=null)m.set(e.date,v)});return [...m].map(([date,v])=>({date,v}))}
+function measSeries(aid,k,from){const m=new Map();measRows(aid,from).forEach(e=>{const v=measVal(e,k);if(v!=null)m.set(e.date,v)});const out=[...m].map(([date,v])=>({date,v}));
+  /* sin registros de esa medida: se toma el dato del perfil (peso, % grasa, masa muscular → IMM) como punto de partida */
+  if(!out.length&&(k==='imm'||k==='grasa'||k==='peso')){const a=S.athletes.find(x=>x.id===aid);if(a){const c=bodyComp(a),v=k==='imm'?c.imm:k==='grasa'?c.bf:c.w;if(v!=null&&isFinite(v))out.push({date:TODAY,v:Math.round(v*10)/10,prof:true})}}
+  return out}
 function measGood(a,m,first){if(m.g!=='goal')return m.g;const gw=+a.goalWeight;if(gw&&first!=null)return gw<first?-1:gw>first?1:0;const g=normTxt(a.goal||'');return /defin|perdida|grasa|bajar/.test(g)?-1:/hipertrof|masa|volumen|subir/.test(g)?1:0}
 function measStat(a,m,from){
   const s=measSeries(a.id,m.k,from);if(!s.length)return {m,s,st:'none'};
@@ -2715,7 +2720,7 @@ function measCardHTML(a,role){
     <div class="meas-h"><div><b>📏 Medidas corporales</b> ${co?'':qm('medidas')}<div class="muted" style="font-size:12px">Últimos 3 meses · peso, % grasa, IMM y circunferencias</div></div><span style="flex:1"></span>
       ${co?`<button class="btn soft sm" onclick="openMeasEntry('${a.id}')">${ic('plus',13)} Agregar medidas</button>`:''}
       <button class="btn primary sm" onclick="openBodyView('${a.id}','${role}')">🧍 ${co?'Ver progreso físico':'Ver mi progreso físico'}</button></div>
-    ${has?`<div class="meas-grid">${stats.map(x=>`<div class="mg ${x.st}" title="${esc(x.m.tip||'')}"><div class="mg-l">${x.m.l}</div><div class="mg-v">${x.last!=null?fmtV(x.last):'—'}<small>${x.last!=null?' '+x.m.u:''}</small></div><div class="mg-d">${x.s.length>1?fmtD(x.d)+' '+x.m.u:x.s.length?'1 registro':'sin datos'}</div></div>`).join('')}</div>`
+    ${has?`<div class="meas-grid">${stats.map(x=>`<div class="mg ${x.st}" title="${esc(x.m.tip||'')}"><div class="mg-l">${x.m.l}</div><div class="mg-v">${x.last!=null?fmtV(x.last):'—'}<small>${x.last!=null?' '+x.m.u:''}</small></div><div class="mg-d">${x.s.length>1?fmtD(x.d)+' '+x.m.u:x.s.length?(x.s[0].prof?'dato del perfil':'1 registro'):'sin datos'}</div></div>`).join('')}</div>`
       :`<div class="empty-state" style="padding:18px">${co?'Aún no hay medidas. Toca «Agregar medidas» para capturar las de hoy o las de los últimos 3 meses.':'Tu coach aún no registra tus medidas.'}</div>`}
     ${co&&rows.length?`<details class="meas-hist"><summary>🗂️ Histórico de los últimos 3 meses (${rows.length})</summary><div class="scroll-x"><table class="tbl"><thead><tr><th>Fecha</th>${MEAS.map(m=>`<th>${m.l}</th>`).join('')}<th></th></tr></thead><tbody>
       ${rows.map(e=>`<tr><td>${dmy(e.date)}</td>${MEAS.map(m=>`<td>${measVal(e,m.k)!=null?fmtV(measVal(e,m.k)):'<span class="muted">—</span>'}</td>`).join('')}<td><div class="row-acts"><button class="mini-btn" title="Editar" onclick="openMeasEntry('${a.id}','${e.id}')">${ic('edit',13)}</button><button class="mini-btn" title="Eliminar" onclick="delMeas('${e.id}')">${ic('trash',13)}</button></div></td></tr>`).join('')}
@@ -2816,7 +2821,7 @@ function openBodyView(aid,role){
   const verb=x=>`${x.d<0?'bajó':'subió'} <b>${fmtV(Math.abs(x.d))} ${x.m.u}</b> de ${x.m.k==='grasa'?'grasa':x.m.k==='imm'?'IMM':x.m.l.toLowerCase()}`;
   const summary=!ch.length?(MEAS.some(m=>st[m.k].s.length)?'Aún no hay suficientes mediciones para comparar. Con la próxima verás tu avance aquí.':'Todavía no hay medidas registradas.')
     :`${good.length?`✅ ${me?'Tu cuerpo':fn} ${good.slice(0,3).map(verb).join(', ')}.`:''} ${bad.length?`<br>⚠️ Por vigilar: ${bad.slice(0,2).map(verb).join(', ')}.`:''}`;
-  const top=MEAS.slice(0,3).map(m=>{const x=st[m.k],col=ST_COL[x.st];return `<div class="bv-top ${x.st}"><div class="l">${m.l}${m.k==='imm'?' '+qm('imm'):''}</div><div class="v">${x.last!=null?fmtV(x.last):'—'}<small> ${m.u}</small></div><div class="d" style="color:${x.st==='none'?'#9ca3af':col}">${x.s.length>1?fmtD(x.d)+' '+m.u:x.s.length?'1 registro':'sin datos'}</div>${sparkSVG(x.s,x.st==='none'?'#cbd5e1':col,120,34)}</div>`}).join('');
+  const top=MEAS.slice(0,3).map(m=>{const x=st[m.k],col=ST_COL[x.st];return `<div class="bv-top ${x.st}"><div class="l">${m.l}${m.k==='imm'?' '+qm('imm'):''}</div><div class="v">${x.last!=null?fmtV(x.last):'—'}<small> ${m.u}</small></div><div class="d" style="color:${x.st==='none'?'#9ca3af':col}">${x.s.length>1?fmtD(x.d)+' '+m.u:x.s.length?(x.s[0].prof?'dato del perfil':'1 registro'):'sin datos'}</div>${sparkSVG(x.s,x.st==='none'?'#cbd5e1':col,120,34)}</div>`}).join('');
   openModal(`<div class="modal xl bv-modal"><div class="modal-h"><h3>🧍 ${me?'Mi progreso físico':'Progreso físico · '+fn}</h3><button class="x" onclick="closeModal()">${ic('x',20)}</button></div><div class="modal-b">
     <div class="bv-bar"><div class="seg-sm"><button class="${S.ui.bvAll?'':'on'}" onclick="S.ui.bvAll=false;openBodyView('${aid}','${role}')">Últimos 3 meses</button><button class="${S.ui.bvAll?'on':''}" onclick="S.ui.bvAll=true;openBodyView('${aid}','${role}')">Todo</button></div>${role==='coach'?`<button class="btn soft sm" onclick="openMeasEntry('${aid}')">${ic('plus',13)} Agregar medidas</button>`:''}</div>
     <div class="bv-sum">${summary}</div>
